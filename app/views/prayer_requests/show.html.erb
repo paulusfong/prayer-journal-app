@@ -1,0 +1,93 @@
+<% page_title @prayer_request.title %>
+<article class="request">
+  <p class="eyebrow">
+    <% if @prayer_request.visibility_private? %>Private · <% end %>
+    <% if @prayer_request.status_answered? %>Answered · <% end %>
+    <%= @prayer_request.author.display_label %>
+    <% if @prayer_request.who_for.present? %> · for <%= @prayer_request.who_for %><% end %>
+    <% if @prayer_request.category_label %> · <%= @prayer_request.category_label %><% end %>
+    <% if @prayer_request.hope_by.present? %> · <%= hope_by_label(@prayer_request) %><% end %>
+  </p>
+  <h1><%= @prayer_request.title %></h1>
+  <% if @prayer_request.body.present? %>
+    <div class="body"><%= simple_format h(@prayer_request.body) %></div>
+  <% end %>
+
+  <p class="prayed">
+    <%= pluralize(@prayer_request.prayer_marks_count, "person") %> prayed
+    <% names = @prayer_request.praying_users.map(&:display_label) %>
+    <% if names.any? %> · <%= names.to_sentence %><% end %>
+  </p>
+
+  <div class="actions">
+    <% if @prayer_request.status_open? %>
+      <% if @prayer_mark %>
+        <%= button_to "I prayed — undo", prayer_request_prayer_mark_path(@prayer_request), method: :delete, class: "btn" %>
+      <% else %>
+        <%= button_to "I prayed", prayer_request_prayer_mark_path(@prayer_request), method: :post, class: "btn" %>
+      <% end %>
+      <%= button_to "Mark answered", prayer_request_answer_path(@prayer_request), method: :post, class: "btn" %>
+    <% else %>
+      <%= button_to "Reopen", prayer_request_answer_path(@prayer_request), method: :delete, class: "btn" %>
+    <% end %>
+    <% if @prayer_request.author_id == Current.user.id %>
+      <%= link_to "Edit", edit_prayer_request_path(@prayer_request) %>
+      <%= button_to "Delete", prayer_request_path(@prayer_request), method: :delete, class: "text-btn danger", form: { data: { turbo_confirm: "Delete this request?" } } %>
+    <% end %>
+  </div>
+</article>
+
+<section class="panel">
+  <h2>Updates</h2>
+  <% if @request_updates.any? %>
+    <ol class="timeline">
+      <% @request_updates.each do |update| %>
+        <li>
+          <time datetime="<%= update.created_at.iso8601 %>"><%= update.created_at.to_date.to_fs(:long) %></time>
+          <div><%= simple_format h(update.body) %></div>
+          <% if update.author_id == Current.user.id %>
+            <%= button_to "Remove", prayer_request_request_update_path(@prayer_request, update), method: :delete, class: "text-btn" %>
+          <% end %>
+        </li>
+      <% end %>
+    </ol>
+  <% else %>
+    <p class="muted">No updates yet.</p>
+  <% end %>
+
+  <% if @prayer_request.author_id == Current.user.id %>
+    <%= form_with model: [@prayer_request, @request_update] do |f| %>
+      <%= f.label :body, "Add an update" %>
+      <%= f.text_area :body, rows: 3, maxlength: 2000, required: true %>
+      <%= f.submit "Add update" %>
+    <% end %>
+  <% end %>
+</section>
+
+<section class="panel">
+  <h2>Notes</h2>
+  <% if @prayer_notes.any? %>
+    <ul class="notes">
+      <% @prayer_notes.each do |note| %>
+        <li>
+          <strong><%= note.author.display_label %></strong>
+          <span class="muted"><%= note.created_at.to_date.to_fs(:long) %></span>
+          <p><%= note.body %></p>
+          <% if note.author_id == Current.user.id %>
+            <%= button_to "Remove", prayer_request_prayer_note_path(@prayer_request, note), method: :delete, class: "text-btn" %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p class="muted">No notes yet.</p>
+  <% end %>
+
+  <% if @prayer_request.status_open? %>
+    <%= form_with model: [@prayer_request, @prayer_note] do |f| %>
+      <%= f.label :body, "Leave a short note" %>
+      <%= f.text_area :body, rows: 2, maxlength: 280, required: true %>
+      <%= f.submit "Add note" %>
+    <% end %>
+  <% end %>
+</section>

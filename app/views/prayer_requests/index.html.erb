@@ -1,0 +1,13 @@
+<% page_title "Open" %>
+<div class="list-head">
+  <h1>Open requests</h1>
+  <%= link_to "Log a request", new_prayer_request_path, class: "btn" %>
+</div>
+
+<% if @prayer_requests.any? %>
+  <ul class="request-list">
+    <%= render partial: "prayer_requests/item", collection: @prayer_requests, as: :prayer_request %>
+  </ul>
+<% else %>
+  <p class="empty">No open requests — add one.</p>
+<% end %>

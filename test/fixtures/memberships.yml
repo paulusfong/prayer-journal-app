@@ -1,0 +1,17 @@
+owner:
+  user: owner
+  circle: our
+  role: owner
+  status: approved
+
+member:
+  user: member
+  circle: our
+  role: member
+  status: approved
+
+pending:
+  user: pending
+  circle: our
+  role: member
+  status: pending

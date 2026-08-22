@@ -1,0 +1,11 @@
+<% page_title "Sign in" %>
+<section class="panel auth">
+  <h1>Sign in</h1>
+  <p class="lede">We’ll email you a link. No password.</p>
+
+  <%= form_with url: session_path, method: :post do |f| %>
+    <%= f.label :email_address, "Email" %>
+    <%= f.email_field :email_address, required: true, autofocus: true, autocomplete: "email" %>
+    <%= f.submit "Send link" %>
+  <% end %>
+</section>
