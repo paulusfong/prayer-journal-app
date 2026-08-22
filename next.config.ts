@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@libsql/client", "libsql"],
+  serverExternalPackages: ["better-auth", "@libsql/client", "libsql"],
   turbopack: {
     root: __dirname,
   },

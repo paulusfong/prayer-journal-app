@@ -13,5 +13,5 @@ if (url.startsWith("file:")) {
 
 const client = createClient({ url });
 
-export const db = drizzle(client, { schema });
+export const db = drizzle({ client, schema });
 export type DB = typeof db;
