@@ -1,7 +1,0 @@
-<% page_title "Confirm sign-in" %>
-<section class="panel auth">
-  <h1>Finish signing in</h1>
-  <p class="lede">Click below to enter the journal. This keeps email scanners from using the link for you.</p>
-
-  <%= button_to "Sign in", magic_signin_path(params[:token]), method: :post %>
-</section>

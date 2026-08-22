@@ -1,6 +1,0 @@
-active:
-  circle: our
-  created_by: owner
-  token: test-invite-token
-  token_digest: <%= Invite.digest("test-invite-token") %>
-  expires_at: <%= 14.days.from_now %>

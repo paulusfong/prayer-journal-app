@@ -28,7 +28,9 @@ A Rails 8.1 Hotwire app, one deploy, closed membership, scoped queries for every
 
 ### Architecture
 
-**Stack (locked for v1):**
+**Stack (v1, rewritten):** Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, Drizzle ORM, SQLite via libSQL, Better Auth 1.7 magic links, Resend (or `tmp/mails` in dev). Rails 8 was prototyped first and replaced.
+
+**Original Rails lock (superseded):**
 
 | Piece | Choice | Why |
 |---|---|---|
