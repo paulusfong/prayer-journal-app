@@ -12,7 +12,7 @@ export default async function HomePage() {
     <Shell user={user} isOwner={membership.role === "owner"} approved>
       <div className="list-head">
         <h1>Open requests</h1>
-        <Link href="/requests/new" className="btn">
+        <Link href="/requests/new" className="btn" title="Click to log a new prayer request">
           Log a request
         </Link>
       </div>
