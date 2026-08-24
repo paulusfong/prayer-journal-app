@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "prayer_journal_app",
+  "project_id": "22ccb53b-5d65-4903-bd28-703706906208"
+}
