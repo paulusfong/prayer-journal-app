@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/journal.test.ts",
+    "test": "node --test --import tsx src/lib/*.test.ts",
+    "test:coverage": "node --test --experimental-test-coverage --import tsx src/lib/*.test.ts",
+    "test:mutation": "stryker run",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
@@ -19,6 +21,8 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/typescript-checker": "^10.0.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
