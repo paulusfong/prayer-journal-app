@@ -30,6 +30,9 @@ npm test
 
 ## Production
 
+Shipping to a real circle? Follow [docs/go-live-checklist.md](docs/go-live-checklist.md).
+
+
 - `BETTER_AUTH_SECRET` — required
 - `BETTER_AUTH_URL` — public origin
 - `DATABASE_URL` — `file:./data/journal.sqlite` or a libSQL/Turso URL
