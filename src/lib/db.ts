@@ -13,7 +13,7 @@ if (url.startsWith("file:")) {
   fs.mkdirSync(path.dirname(path.resolve(file)), { recursive: true });
 }
 
-const client = createClient(authToken ? { url, authToken } : { url });
+export const client = createClient(authToken ? { url, authToken } : { url });
 
 export const db = drizzle({ client, schema });
 export type DB = typeof db;
