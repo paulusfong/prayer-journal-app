@@ -229,21 +229,35 @@ export async function deleteRequest(userId: string, requestId: string) {
   return true;
 }
 
+async function loadVisibleRequest(userId: string, requestId: string) {
+  const membership = await getApprovedMembership(userId);
+  if (!membership) return null;
+  return getVisibleRequest(userId, membership.circleId, requestId);
+}
+
 export async function markPrayed(userId: string, requestId: string) {
+  const found = await loadVisibleRequest(userId, requestId);
+  if (!found) return false;
   try {
     await db.insert(prayerMarks).values({ id: id(), prayerRequestId: requestId, userId, createdAt: new Date() });
   } catch {
     // unique
   }
+  return true;
 }
 
 export async function unmarkPrayed(userId: string, requestId: string) {
+  const found = await loadVisibleRequest(userId, requestId);
+  if (!found) return false;
   await db
     .delete(prayerMarks)
     .where(and(eq(prayerMarks.prayerRequestId, requestId), eq(prayerMarks.userId, userId)));
+  return true;
 }
 
 export async function addNote(userId: string, requestId: string, body: string) {
+  const found = await loadVisibleRequest(userId, requestId);
+  if (!found) return null;
   const text = body.trim().slice(0, 280);
   if (!text) throw new Error("Note is required.");
   await db.insert(prayerNotes).values({
@@ -253,6 +267,7 @@ export async function addNote(userId: string, requestId: string, body: string) {
     body: text,
     createdAt: new Date(),
   });
+  return true;
 }
 
 export async function deleteNote(userId: string, noteId: string) {
@@ -260,6 +275,8 @@ export async function deleteNote(userId: string, noteId: string) {
 }
 
 export async function addUpdate(userId: string, requestId: string, body: string) {
+  const found = await loadVisibleRequest(userId, requestId);
+  if (!found || found.request.authorId !== userId) return null;
   const text = body.trim().slice(0, 2000);
   if (!text) throw new Error("Update is required.");
   await db.insert(requestUpdates).values({
@@ -269,6 +286,7 @@ export async function addUpdate(userId: string, requestId: string, body: string)
     body: text,
     createdAt: new Date(),
   });
+  return true;
 }
 
 export async function deleteUpdate(userId: string, updateId: string) {
@@ -278,8 +296,8 @@ export async function deleteUpdate(userId: string, updateId: string) {
 }
 
 export async function answerRequest(userId: string, requestId: string) {
-  const existing = await db.select().from(prayerRequests).where(eq(prayerRequests.id, requestId)).limit(1);
-  const req = existing[0];
+  const found = await loadVisibleRequest(userId, requestId);
+  const req = found?.request;
   if (!req || req.status !== "open") return null;
   await db
     .update(prayerRequests)
@@ -299,11 +317,14 @@ export async function answerRequest(userId: string, requestId: string) {
   return true;
 }
 
-export async function reopenRequest(requestId: string) {
+export async function reopenRequest(userId: string, requestId: string) {
+  const found = await loadVisibleRequest(userId, requestId);
+  if (!found) return null;
   await db
     .update(prayerRequests)
     .set({ status: "open", answeredAt: null, answeredById: null, updatedAt: new Date() })
     .where(eq(prayerRequests.id, requestId));
+  return true;
 }
 
 async function notifyNewRequest(requestId: string, authorId: string, circleId: string, title: string) {

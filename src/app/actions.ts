@@ -4,6 +4,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
+import { canRequestMagicLink } from "@/lib/auth-gate";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
@@ -15,7 +16,6 @@ import {
   deleteNote,
   deleteRequest,
   deleteUpdate,
-  findActiveInvite,
   issueInvite,
   markPrayed,
   reopenRequest,
@@ -32,16 +32,7 @@ export async function requestMagicLink(formData: FormData) {
   if (!email) redirect("/sign-in");
 
   const inviteRaw = (await cookies()).get("invite_token")?.value;
-  const existing = await db.select({ id: user.id }).from(user).where(eq(user.email, email)).limit(1);
-  const { circles } = await import("@/lib/schema");
-  const circleRows = await db.select().from(circles).limit(1);
-
-  const allowed =
-    existing.length > 0 ||
-    circleRows.length === 0 ||
-    Boolean(inviteRaw && (await findActiveInvite(inviteRaw)));
-
-  if (allowed) {
+  if (await canRequestMagicLink(email, inviteRaw)) {
     await auth.api.signInMagicLink({
       body: { email, callbackURL: "/" },
       headers: await headers(),
@@ -128,8 +119,8 @@ export async function markAnswered(requestId: string) {
 }
 
 export async function reopen(requestId: string) {
-  await requireApproved();
-  await reopenRequest(requestId);
+  const { user } = await requireApproved();
+  await reopenRequest(user.id, requestId);
   revalidatePath(`/requests/${requestId}`);
   redirect(`/requests/${requestId}`);
 }
