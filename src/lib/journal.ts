@@ -34,22 +34,39 @@ export async function getPendingMembership(userId: string) {
   return rows[0] ?? null;
 }
 
+/** Deterministic id so concurrent first-logins race on a single PK instead of creating N circles. */
+export const SINGLETON_CIRCLE_ID = "circle-singleton";
+
+/**
+ * First approved session creates the one circle + owner membership.
+ * Concurrent callers: only the insert that wins the singleton PK proceeds;
+ * losers return and fall through to the invite gate.
+ */
 export async function bootstrapIfNeeded(userId: string) {
   const existing = await db.select({ id: circles.id }).from(circles).limit(1);
   if (existing.length > 0) return;
 
-  const circleId = id();
   const now = new Date();
-  await db.insert(circles).values({ id: circleId, name: "Our circle", createdAt: now });
+  try {
+    await db.insert(circles).values({
+      id: SINGLETON_CIRCLE_ID,
+      name: "Our circle",
+      createdAt: now,
+    });
+  } catch {
+    // Unique/PK conflict — another concurrent bootstrap claimed the singleton.
+    return;
+  }
+
   await db.insert(memberships).values({
     id: id(),
     userId,
-    circleId,
+    circleId: SINGLETON_CIRCLE_ID,
     role: "owner",
     status: "approved",
     createdAt: now,
   });
-  await issueInvite(circleId, userId);
+  await issueInvite(SINGLETON_CIRCLE_ID, userId);
 }
 
 export async function issueInvite(circleId: string, createdById: string) {
