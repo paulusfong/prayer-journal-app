@@ -42,6 +42,24 @@ export async function requestMagicLink(formData: FormData) {
   redirect("/sign-in?sent=1");
 }
 
+export async function confirmMagicLink(formData: FormData) {
+  const token = String(formData.get("token") ?? "").trim();
+  if (!token) redirect("/sign-in");
+
+  // Omit callbackURL so success returns JSON (session cookie via nextCookies)
+  // instead of a better-auth redirect APIError. GET of the email URL alone
+  // never reaches verify.
+  try {
+    await auth.api.magicLinkVerify({
+      query: { token },
+      headers: await headers(),
+    });
+  } catch {
+    redirect("/sign-in?error=invalid");
+  }
+  redirect("/");
+}
+
 export async function signOut() {
   await auth.api.signOut({ headers: await headers() });
   redirect("/sign-in");
@@ -128,7 +146,18 @@ export async function reopen(requestId: string) {
 export async function rotateInvite() {
   const { user, membership } = await requireApproved();
   if (membership.role !== "owner") throw new Error("Forbidden");
-  await issueInvite(membership.circleId, user.id);
+  const issued = await issueInvite(membership.circleId, user.id);
+  const secure =
+    process.env.NODE_ENV === "production" ||
+    (process.env.BETTER_AUTH_URL ?? "").startsWith("https");
+  // Raw join token is shown once via this short-lived cookie (not stored in DB).
+  (await cookies()).set("invite_link_once", issued.rawToken, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure,
+    path: "/",
+    maxAge: 60 * 10,
+  });
   revalidatePath("/circle");
 }
 

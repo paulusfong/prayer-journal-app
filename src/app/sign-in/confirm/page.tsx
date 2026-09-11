@@ -1,3 +1,4 @@
+import { confirmMagicLink } from "@/app/actions";
 import { Shell } from "@/components/shell";
 import { redirect } from "next/navigation";
 
@@ -9,8 +10,6 @@ export default async function ConfirmPage({
   const { token } = await searchParams;
   if (!token) redirect("/sign-in");
 
-  const verify = `/api/auth/magic-link/verify?token=${encodeURIComponent(token)}&callbackURL=${encodeURIComponent("/")}`;
-
   return (
     <Shell>
       <section className="panel auth">
@@ -18,7 +17,8 @@ export default async function ConfirmPage({
         <p className="lede">
           Click below to enter the journal. This keeps email scanners from using the link for you.
         </p>
-        <form action={verify} method="get">
+        <form action={confirmMagicLink}>
+          <input type="hidden" name="token" value={token} />
           <button type="submit">Sign in</button>
         </form>
       </section>

@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { magicLink } from "better-auth/plugins";
+import { resolveAuthSecret } from "./auth-secret";
 import { db } from "./db";
 import * as schema from "./schema";
 import { sendMail } from "./mail";
@@ -9,7 +10,7 @@ import { sendMail } from "./mail";
 const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
 export const auth = betterAuth({
-  secret: process.env.BETTER_AUTH_SECRET ?? "dev-only-change-me-in-production-32b",
+  secret: resolveAuthSecret(),
   baseURL,
   database: drizzleAdapter(db, {
     provider: "sqlite",

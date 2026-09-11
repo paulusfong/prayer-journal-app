@@ -61,29 +61,38 @@ export async function issueInvite(circleId: string, createdById: string) {
   for (const inv of active) {
     await db.update(invites).set({ revokedAt: now }).where(eq(invites.id, inv.id));
   }
-  const token = inviteToken();
+  const rawToken = inviteToken();
+  const tokenDigest = digest(rawToken);
+  // Persist digest only. `token` column kept for schema compat but never holds plaintext.
   const row = {
     id: id(),
     circleId,
     createdById,
-    token,
-    tokenDigest: digest(token),
+    token: tokenDigest,
+    tokenDigest,
     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     createdAt: now,
   };
   await db.insert(invites).values(row);
-  return row;
+  return { ...row, rawToken };
 }
 
 export async function findActiveInvite(raw: string) {
   const hashed = digest(raw);
-  const rows = await db
-    .select()
-    .from(invites)
-    .where(or(eq(invites.tokenDigest, hashed), eq(invites.token, raw)));
+  const rows = await db.select().from(invites).where(eq(invites.tokenDigest, hashed)).limit(1);
   const inv = rows[0];
   if (!inv || inv.revokedAt || inv.expiresAt.getTime() < Date.now()) return null;
   return inv;
+}
+
+/** Scrub any legacy plaintext invite tokens still sitting in the `token` column. */
+export async function scrubLegacyInvitePlaintext() {
+  const rows = await db.select().from(invites);
+  for (const inv of rows) {
+    if (inv.token !== inv.tokenDigest) {
+      await db.update(invites).set({ token: inv.tokenDigest }).where(eq(invites.id, inv.id));
+    }
+  }
 }
 
 export async function redeemInvite(userId: string, raw: string) {
@@ -356,6 +365,7 @@ export async function listCirclePeople(circleId: string) {
 }
 
 export async function activeInvite(circleId: string) {
+  await scrubLegacyInvitePlaintext();
   const rows = await db
     .select()
     .from(invites)

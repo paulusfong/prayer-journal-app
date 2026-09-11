@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { decideMembership, rotateInvite } from "@/app/actions";
 import { Shell } from "@/components/shell";
 import { displayLabel } from "@/lib/ids";
@@ -14,24 +15,30 @@ export default async function CirclePage() {
   const pending = people.filter((p) => p.membership.status === "pending");
   const members = people.filter((p) => p.membership.status === "approved");
   const base = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+  const onceToken = (await cookies()).get("invite_link_once")?.value;
 
   return (
     <Shell user={user} isOwner approved>
       <section className="panel">
         <h1>Circle</h1>
         <h2>Invite</h2>
-        {invite ? (
+        {onceToken ? (
           <>
             <p className="invite-url">
               <code>
-                {base}/join/{invite.token}
+                {base}/join/{onceToken}
               </code>
             </p>
             <p className="muted">
-              Reusable until {invite.expiresAt.toISOString().slice(0, 10)}. Anyone with the link still needs your
-              approval.
+              Copy this link now — the raw token is shown only right after you reset it, not stored in
+              the database.
             </p>
           </>
+        ) : invite ? (
+          <p className="muted">
+            An invite link is active until {invite.expiresAt.toISOString().slice(0, 10)}. Reset the link
+            to reveal a new join URL (shown once). Anyone with the link still needs your approval.
+          </p>
         ) : (
           <p className="muted">No active invite link.</p>
         )}
