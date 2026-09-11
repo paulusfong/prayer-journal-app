@@ -3,6 +3,13 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { findActiveInvite, redeemInvite } from "@/lib/journal";
 
+function inviteCookieSecure() {
+  return (
+    process.env.NODE_ENV === "production" ||
+    (process.env.BETTER_AUTH_URL ?? "").startsWith("https")
+  );
+}
+
 export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const invite = await findActiveInvite(token);
@@ -16,6 +23,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   cookieStore.set("invite_token", token, {
     httpOnly: true,
     sameSite: "lax",
+    secure: inviteCookieSecure(),
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });

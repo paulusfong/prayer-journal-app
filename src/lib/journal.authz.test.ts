@@ -128,4 +128,52 @@ describe("journal authz", async () => {
     const answered = await journal.answerRequest(memberId, created.id);
     assert.equal(answered, true);
   });
+
+  it("stores only invite digests and looks up by hash", async () => {
+    const issued = await journal.issueInvite(circleId, authorId);
+    assert.ok(issued.rawToken);
+    assert.equal(issued.token, issued.tokenDigest);
+    assert.notEqual(issued.rawToken, issued.tokenDigest);
+
+    const { invites } = await import("./schema");
+    const rows = await db.select().from(invites).where(eq(invites.id, issued.id)).limit(1);
+    assert.equal(rows[0]?.token, issued.tokenDigest);
+    assert.equal(rows[0]?.tokenDigest, issued.tokenDigest);
+    assert.notEqual(rows[0]?.token, issued.rawToken);
+
+    assert.ok(await journal.findActiveInvite(issued.rawToken));
+    // Legacy plaintext match must not work against the digest column value alone as a join secret
+    assert.equal(await journal.findActiveInvite(issued.tokenDigest), null);
+  });
+
+  it("scrubs legacy plaintext invite tokens", async () => {
+    const { invites } = await import("./schema");
+    const { digest, inviteToken, id: newId } = await import("./ids");
+    const raw = inviteToken();
+    const hashed = digest(raw);
+    const inviteId = newId();
+    const now = new Date();
+    await db.insert(invites).values({
+      id: inviteId,
+      circleId,
+      createdById: authorId,
+      token: raw,
+      tokenDigest: hashed,
+      expiresAt: new Date(Date.now() + 86400000),
+      createdAt: now,
+    });
+
+    await journal.scrubLegacyInvitePlaintext();
+    const rows = await db.select().from(invites).where(eq(invites.id, inviteId)).limit(1);
+    assert.equal(rows[0]?.token, hashed);
+    assert.equal(rows[0]?.tokenDigest, hashed);
+    assert.ok(await journal.findActiveInvite(raw));
+  });
+
+  it("allows magic link when invite cookie token hashes to an active invite", async () => {
+    const issued = await journal.issueInvite(circleId, authorId);
+    assert.equal(await canRequestMagicLink("newbie@example.com", issued.rawToken), true);
+    assert.equal(await canRequestMagicLink("newbie@example.com", "not-a-real-token"), false);
+  });
+
 });
