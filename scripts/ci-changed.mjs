@@ -94,6 +94,9 @@ function relatedTests(sourceFile) {
 }
 
 function forceFull(files) {
+  // Full suite = product/test harness may have changed.
+  // Do NOT force full for Actions YAML / docs / gitignore-only PRs
+  // (e.g. adding gitleaks) — those get mode=skip + light required check.
   const triggers = [
     "package.json",
     "package-lock.json",
@@ -101,7 +104,6 @@ function forceFull(files) {
     "stryker.config.mjs",
     ".c8rc.json",
     "next.config.ts",
-    ".github/workflows/ci.yml",
     "scripts/ci-changed.mjs",
   ];
   return files.some((f) => triggers.includes(f) || f.startsWith("scripts/"));
@@ -117,7 +119,7 @@ if (files.length === 0) {
     mode: "full",
     testFiles: ["FULL"],
     mutateFiles: ["FULL"],
-    reason: "deps or CI/tooling config changed",
+    reason: "deps or test-harness config changed",
     changed: files,
   };
 } else {
@@ -136,7 +138,7 @@ if (files.length === 0) {
       mode: "skip",
       testFiles: [],
       mutateFiles: [],
-      reason: "changes outside src (docs/etc.)",
+      reason: "no src/harness changes (docs, workflow YAML, gitignore, etc.)",
       changed: files,
     };
   } else {
