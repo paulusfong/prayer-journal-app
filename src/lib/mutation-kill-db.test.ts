@@ -3,7 +3,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { before, describe, it } from "node:test";
-import { NextRedirect } from "../test/next-harness";
 
 const testdir = fs.mkdtempSync(path.join(os.tmpdir(), "pj-mkill-"));
 process.env.DATABASE_URL = `file:${path.join(testdir, "t.sqlite")}`;
@@ -23,7 +22,6 @@ describe("mutation kills — db-backed", async () => {
   const ownerId = id();
   const memberId = id();
   let circleId = "";
-  const mails: Array<{ to: string; subject: string; text: string }> = [];
 
   before(async () => {
     const sqlFile = fs.readFileSync(path.join(process.cwd(), "drizzle/0000_init.sql"), "utf8");
@@ -61,7 +59,7 @@ describe("mutation kills — db-backed", async () => {
 
   it("issueInvite expiry is ~30 days and revokes prior actives", async () => {
     const t0 = Date.now();
-    const a = await journal.issueInvite(circleId, ownerId);
+    await journal.issueInvite(circleId, ownerId);
     const b = await journal.issueInvite(circleId, ownerId);
     const all = await db.select().from(schema.invites);
     const active = all.filter((i) => i.revokedAt == null);

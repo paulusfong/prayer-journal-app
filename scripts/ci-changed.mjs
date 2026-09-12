@@ -145,6 +145,14 @@ function sh(cmd) {
   return execSync(cmd, { encoding: "utf8" }).trim();
 }
 
+export function listChangedFiles({ staged = false } = {}) {
+  if (staged) {
+    const out = sh("git diff --cached --name-only --diff-filter=ACMR");
+    return out ? out.split("\n").filter(Boolean) : [];
+  }
+  return changedFiles();
+}
+
 function changedFiles() {
   const base =
     process.env.CI_BASE_SHA ||

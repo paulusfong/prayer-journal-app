@@ -51,6 +51,9 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
+      - name: ESLint
+        run: npm run lint
+
       - name: Unit tests (changed / related)
         if: steps.scope.outputs.mode == 'partial'
         run: |
