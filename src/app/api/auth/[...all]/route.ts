@@ -1,6 +1,11 @@
 import { auth } from "@/lib/auth";
 import { canRequestMagicLink, inviteTokenFromCookieHeader } from "@/lib/auth-gate";
 import { blockedMagicLinkVerifyResponse } from "@/lib/magic-link-verify-guard";
+import {
+  allowMagicLinkRequest,
+  clientIpFromHeaders,
+  magicLinkThrottleKey,
+} from "@/lib/magic-link-throttle";
 import { toNextJsHandler } from "better-auth/next-js";
 
 const { GET: authGet, POST: authPost } = toNextJsHandler(auth);
@@ -40,6 +45,11 @@ export async function POST(request: Request) {
   const url = new URL(request.url);
   if (url.pathname.endsWith("/sign-in/magic-link")) {
     const email = await emailFromAuthRequest(request.clone());
+    const throttleKey = magicLinkThrottleKey(email, clientIpFromHeaders(request.headers));
+    if (!allowMagicLinkRequest(throttleKey)) {
+      // Match no-enumeration UX used by the HTTP gate and server action.
+      return Response.json({ status: true });
+    }
     const invite = inviteTokenFromCookieHeader(request.headers.get("cookie"));
     if (!(await canRequestMagicLink(email, invite))) {
       return Response.json({ status: true });

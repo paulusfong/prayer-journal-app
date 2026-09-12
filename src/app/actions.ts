@@ -23,6 +23,12 @@ import {
   unmarkPrayed,
   updateRequest,
 } from "@/lib/journal";
+import { INVITE_LINK_ONCE_COOKIE } from "@/lib/invite-flash";
+import {
+  allowMagicLinkRequest,
+  clientIpFromHeaders,
+  magicLinkThrottleKey,
+} from "@/lib/magic-link-throttle";
 import { requireApproved, requireUser } from "@/lib/session";
 
 export async function requestMagicLink(formData: FormData) {
@@ -31,12 +37,17 @@ export async function requestMagicLink(formData: FormData) {
     .toLowerCase();
   if (!email) redirect("/sign-in");
 
-  const inviteRaw = (await cookies()).get("invite_token")?.value;
-  if (await canRequestMagicLink(email, inviteRaw)) {
-    await auth.api.signInMagicLink({
-      body: { email, callbackURL: "/" },
-      headers: await headers(),
-    });
+  const hdrs = await headers();
+  const throttleKey = magicLinkThrottleKey(email, clientIpFromHeaders(hdrs));
+  // Same UX whether gated, throttled, or sent — avoid account enumeration.
+  if (allowMagicLinkRequest(throttleKey)) {
+    const inviteRaw = (await cookies()).get("invite_token")?.value;
+    if (await canRequestMagicLink(email, inviteRaw)) {
+      await auth.api.signInMagicLink({
+        body: { email, callbackURL: "/" },
+        headers: hdrs,
+      });
+    }
   }
 
   redirect("/sign-in?sent=1");
@@ -151,14 +162,15 @@ export async function rotateInvite() {
     process.env.NODE_ENV === "production" ||
     (process.env.BETTER_AUTH_URL ?? "").startsWith("https");
   // Raw join token is shown once via this short-lived cookie (not stored in DB).
-  (await cookies()).set("invite_link_once", issued.rawToken, {
+  // redirect → GET /circle so middleware can clear the cookie after display.
+  (await cookies()).set(INVITE_LINK_ONCE_COOKIE, issued.rawToken, {
     httpOnly: true,
     sameSite: "lax",
     secure,
     path: "/",
     maxAge: 60 * 10,
   });
-  revalidatePath("/circle");
+  redirect("/circle");
 }
 
 export async function decideMembership(membershipId: string, action: "approve" | "decline" | "revoke") {

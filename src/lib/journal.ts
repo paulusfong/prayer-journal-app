@@ -2,6 +2,7 @@ import { and, asc, desc, eq, isNull, or } from "drizzle-orm";
 import { db } from "./db";
 import { digest, id, inviteToken } from "./ids";
 import { sendMail } from "./mail";
+import { parseCategory, parseHopeBy } from "./request-fields";
 import {
   circles,
   invites,
@@ -198,6 +199,8 @@ export async function createRequest(
 ) {
   const title = data.title.trim();
   if (!title || title.length > 120) throw new Error("Title is required (max 120).");
+  const category = parseCategory(data.category);
+  const hopeBy = parseHopeBy(data.hopeBy);
   const row = {
     id: id(),
     circleId,
@@ -205,9 +208,9 @@ export async function createRequest(
     title,
     body: data.body?.slice(0, 2000) || null,
     whoFor: data.whoFor?.slice(0, 80) || null,
-    category: data.category || null,
+    category,
     categoryOther: data.categoryOther?.slice(0, 80) || null,
-    hopeBy: data.hopeBy || null,
+    hopeBy,
     visibility: data.visibility,
     status: "open" as const,
     createdAt: new Date(),
@@ -229,15 +232,17 @@ export async function updateRequest(
   const req = existing[0];
   if (!req || req.authorId !== userId) return null;
   const wasPrivate = req.visibility === "private";
+  const category = parseCategory(data.category);
+  const hopeBy = parseHopeBy(data.hopeBy);
   await db
     .update(prayerRequests)
     .set({
       title: data.title.trim().slice(0, 120),
       body: data.body?.slice(0, 2000) || null,
       whoFor: data.whoFor?.slice(0, 80) || null,
-      category: data.category || null,
+      category,
       categoryOther: data.categoryOther?.slice(0, 80) || null,
-      hopeBy: data.hopeBy || null,
+      hopeBy,
       visibility: data.visibility,
       updatedAt: new Date(),
     })
