@@ -38,16 +38,23 @@ export function parseArgs(argv) {
 }
 
 export function stepsForPlan(plan, { unitOnly = false } = {}) {
-  if (plan.mode === "skip") return [];
+  const steps = [];
+  if (plan.lintFiles?.length) {
+    steps.push({
+      label: "ESLint (changed files)",
+      cmd: "npx",
+      args: ["eslint", ...plan.lintFiles],
+    });
+  }
+  if (plan.mode === "skip") return steps;
   if (plan.mode === "full") {
-    const steps = [{ label: "Unit tests (full)", cmd: "npm", args: ["test"] }];
+    steps.push({ label: "Unit tests (full)", cmd: "npm", args: ["test"] });
     if (!unitOnly) {
       steps.push({ label: "Coverage gate (full)", cmd: "npm", args: ["run", "test:coverage"] });
       steps.push({ label: "Mutation (full)", cmd: "npm", args: ["run", "test:mutation"] });
     }
     return steps;
   }
-  const steps = [];
   if (plan.testFiles.length > 0) {
     steps.push({
       label: "Unit tests (changed / related)",

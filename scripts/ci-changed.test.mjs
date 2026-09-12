@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   forceFull,
+  isLintTarget,
   isMutateTarget,
   planFromChangedFiles,
 } from "./ci-changed.mjs";
@@ -89,5 +90,25 @@ describe("stryker mutate allowlist", () => {
     assert.deepEqual(plan.mutateFiles, []);
     assert.deepEqual(plan.mutateTestFiles, []);
     assert.ok(plan.testFiles.includes("src/app/app-coverage.test.ts"));
+  });
+});
+
+describe("eslint changed-file allowlist", () => {
+  it("lints JS/TS only, not png/css/md", () => {
+    assert.equal(isLintTarget("src/lib/journal.ts"), true);
+    assert.equal(isLintTarget("scripts/check-pr.mjs"), true);
+    assert.equal(isLintTarget("src/app/page.tsx"), true);
+    assert.equal(isLintTarget("README.md"), false);
+    assert.equal(isLintTarget("src/app/globals.css"), false);
+    assert.equal(isLintTarget("public/icon.png"), false);
+  });
+
+  it("attaches existing lint files even in skip/full", () => {
+    const skip = planFromChangedFiles(["README.md"], io);
+    assert.equal(skip.mode, "skip");
+    assert.deepEqual(skip.lintFiles, []);
+    const full = planFromChangedFiles(["package.json", "src/lib/journal.ts"], io);
+    assert.equal(full.mode, "full");
+    assert.deepEqual(full.lintFiles, ["src/lib/journal.ts"]);
   });
 });

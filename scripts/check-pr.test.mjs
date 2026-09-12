@@ -21,8 +21,20 @@ describe("check-pr parseArgs", () => {
 });
 
 describe("check-pr stepsForPlan", () => {
-  it("runs nothing on skip", () => {
+  it("runs nothing on skip without lint files", () => {
     assert.deepEqual(stepsForPlan({ mode: "skip", testFiles: [], mutateFiles: [] }), []);
+  });
+
+  it("lints changed files even when unit/mutation skip", () => {
+    const steps = stepsForPlan({
+      mode: "skip",
+      testFiles: [],
+      mutateFiles: [],
+      lintFiles: ["scripts/check-pr.mjs"],
+    });
+    assert.equal(steps.length, 1);
+    assert.equal(steps[0].label, "ESLint (changed files)");
+    assert.deepEqual(steps[0].args, ["eslint", "scripts/check-pr.mjs"]);
   });
 
   it("runs scoped unit + mutation on partial", () => {
@@ -39,6 +51,20 @@ describe("check-pr stepsForPlan", () => {
     assert.equal(steps[1].env.STRYKER_MUTATE, "src/lib/request-fields.ts");
     assert.match(steps[1].env.STRYKER_TEST_COMMAND, /request-fields\.test\.ts/);
     assert.match(steps[1].env.STRYKER_TEST_COMMAND, /mutation-kill\.test\.ts/);
+  });
+
+  it("prepends eslint before unit tests when lintFiles present", () => {
+    const steps = stepsForPlan({
+      mode: "partial",
+      testFiles: ["src/lib/request-fields.test.ts"],
+      mutateFiles: [],
+      mutateTestFiles: [],
+      lintFiles: ["src/lib/request-fields.ts"],
+    });
+    assert.deepEqual(
+      steps.map((s) => s.label),
+      ["ESLint (changed files)", "Unit tests (changed / related)"],
+    );
   });
 
   it("omits mutation when unit-only (pre-commit)", () => {
