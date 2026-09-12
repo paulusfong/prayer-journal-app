@@ -313,6 +313,34 @@ describe("mutation kills — db-backed", async () => {
     assert.equal(open[ih]!.request.hopeBy, "2098-01-01");
   });
 
+  it("updateRequest overwrites hopeBy only when the caller passes it", async () => {
+    const req = await journal.createRequest(ownerId, circleId, {
+      title: "Hope",
+      hopeBy: "2099-03-01",
+      visibility: "private",
+    });
+
+    await journal.updateRequest(ownerId, req.id, { title: "Hope", visibility: "private" });
+    let row = (await db.select().from(schema.prayerRequests).where(eq(schema.prayerRequests.id, req.id)))[0]!;
+    assert.equal(row.hopeBy, "2099-03-01");
+
+    await journal.updateRequest(ownerId, req.id, {
+      title: "Hope",
+      hopeBy: "2099-04-02",
+      visibility: "private",
+    });
+    row = (await db.select().from(schema.prayerRequests).where(eq(schema.prayerRequests.id, req.id)))[0]!;
+    assert.equal(row.hopeBy, "2099-04-02");
+
+    await journal.updateRequest(ownerId, req.id, {
+      title: "Hope",
+      hopeBy: "",
+      visibility: "private",
+    });
+    row = (await db.select().from(schema.prayerRequests).where(eq(schema.prayerRequests.id, req.id)))[0]!;
+    assert.equal(row.hopeBy, null);
+  });
+
   it("update circle→circle does not notify; trim title on update", async () => {
     const req = await journal.createRequest(ownerId, circleId, { title: "C1", visibility: "circle" });
     let posts = 0;

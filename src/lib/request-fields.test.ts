@@ -42,4 +42,18 @@ describe("requestLoggedDate", () => {
     assert.match(requestLoggedDate(d), /^\d{4}-\d{2}-\d{2}$/);
     assert.equal(requestLoggedDate(d), "2026-09-12");
   });
+
+  it("uses America/New_York even when UTC is already the next calendar day", () => {
+    // Pin UTC so emptying DateTimeFormat options (runtime zone) cannot match EST.
+    const prevTz = process.env.TZ;
+    process.env.TZ = "UTC";
+    try {
+      // 04:00 UTC in January is 23:00 the previous day in EST (UTC-5).
+      const d = new Date("2026-01-15T04:00:00.000Z");
+      assert.equal(requestLoggedDate(d), "2026-01-14");
+    } finally {
+      if (prevTz === undefined) delete process.env.TZ;
+      else process.env.TZ = prevTz;
+    }
+  });
 });
