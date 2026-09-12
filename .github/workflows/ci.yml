@@ -38,12 +38,16 @@ jobs:
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
           TESTS=$(node scripts/ci-changed.mjs tests)
           MUTATE=$(node scripts/ci-changed.mjs mutate)
+          MUTATE_TESTS=$(node scripts/ci-changed.mjs mutate-tests)
           {
             echo "tests<<EOF"
             echo "$TESTS"
             echo "EOF"
             echo "mutate<<EOF"
             echo "$MUTATE"
+            echo "EOF"
+            echo "mutate_tests<<EOF"
+            echo "$MUTATE_TESTS"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
@@ -73,11 +77,15 @@ jobs:
           set -euo pipefail
           MUTATE="${{ steps.scope.outputs.mutate }}"
           if [ -z "$MUTATE" ]; then
-            echo "No mutate targets — skip mutation."
+            echo "No src/lib mutate targets (UI-only or excluded modules) — skip mutation."
             exit 0
           fi
+          mapfile -t MUTATE_TESTS <<< "${{ steps.scope.outputs.mutate_tests }}"
           echo "Stryker mutate: $MUTATE"
-          npx stryker run --mutate "$MUTATE"
+          echo "Stryker tests: ${MUTATE_TESTS[*]}"
+          export STRYKER_MUTATE="$MUTATE"
+          export STRYKER_TEST_COMMAND="node --experimental-test-module-mocks --import tsx --import ./src/test/register-css.mjs --test ${MUTATE_TESTS[*]}"
+          npx stryker run
 
       - name: Mutation (full)
         if: steps.scope.outputs.mode == 'full'
