@@ -1,10 +1,22 @@
 import { auth } from "@/lib/auth";
 import { canRequestMagicLink, inviteTokenFromCookieHeader } from "@/lib/auth-gate";
+import { blockedMagicLinkVerifyResponse } from "@/lib/magic-link-verify-guard";
 import { toNextJsHandler } from "better-auth/next-js";
 
-const { GET, POST: authPost } = toNextJsHandler(auth);
+const { GET: authGet, POST: authPost } = toNextJsHandler(auth);
 
-export { GET };
+export async function GET(request: Request) {
+  const blocked = blockedMagicLinkVerifyResponse(request);
+  if (blocked) return blocked;
+  return authGet(request);
+}
+
+export async function HEAD(request: Request) {
+  const blocked = blockedMagicLinkVerifyResponse(request);
+  if (blocked) return blocked;
+  const res = await authGet(request);
+  return new Response(null, { status: res.status, headers: res.headers });
+}
 
 async function emailFromAuthRequest(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";

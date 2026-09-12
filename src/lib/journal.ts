@@ -34,22 +34,39 @@ export async function getPendingMembership(userId: string) {
   return rows[0] ?? null;
 }
 
+/** Deterministic id so concurrent first-logins race on a single PK instead of creating N circles. */
+export const SINGLETON_CIRCLE_ID = "circle-singleton";
+
+/**
+ * First approved session creates the one circle + owner membership.
+ * Concurrent callers: only the insert that wins the singleton PK proceeds;
+ * losers return and fall through to the invite gate.
+ */
 export async function bootstrapIfNeeded(userId: string) {
   const existing = await db.select({ id: circles.id }).from(circles).limit(1);
   if (existing.length > 0) return;
 
-  const circleId = id();
   const now = new Date();
-  await db.insert(circles).values({ id: circleId, name: "Our circle", createdAt: now });
+  try {
+    await db.insert(circles).values({
+      id: SINGLETON_CIRCLE_ID,
+      name: "Our circle",
+      createdAt: now,
+    });
+  } catch {
+    // Unique/PK conflict — another concurrent bootstrap claimed the singleton.
+    return;
+  }
+
   await db.insert(memberships).values({
     id: id(),
     userId,
-    circleId,
+    circleId: SINGLETON_CIRCLE_ID,
     role: "owner",
     status: "approved",
     createdAt: now,
   });
-  await issueInvite(circleId, userId);
+  await issueInvite(SINGLETON_CIRCLE_ID, userId);
 }
 
 export async function issueInvite(circleId: string, createdById: string) {
@@ -61,29 +78,38 @@ export async function issueInvite(circleId: string, createdById: string) {
   for (const inv of active) {
     await db.update(invites).set({ revokedAt: now }).where(eq(invites.id, inv.id));
   }
-  const token = inviteToken();
+  const rawToken = inviteToken();
+  const tokenDigest = digest(rawToken);
+  // Persist digest only. `token` column kept for schema compat but never holds plaintext.
   const row = {
     id: id(),
     circleId,
     createdById,
-    token,
-    tokenDigest: digest(token),
+    token: tokenDigest,
+    tokenDigest,
     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     createdAt: now,
   };
   await db.insert(invites).values(row);
-  return row;
+  return { ...row, rawToken };
 }
 
 export async function findActiveInvite(raw: string) {
   const hashed = digest(raw);
-  const rows = await db
-    .select()
-    .from(invites)
-    .where(or(eq(invites.tokenDigest, hashed), eq(invites.token, raw)));
+  const rows = await db.select().from(invites).where(eq(invites.tokenDigest, hashed)).limit(1);
   const inv = rows[0];
   if (!inv || inv.revokedAt || inv.expiresAt.getTime() < Date.now()) return null;
   return inv;
+}
+
+/** Scrub any legacy plaintext invite tokens still sitting in the `token` column. */
+export async function scrubLegacyInvitePlaintext() {
+  const rows = await db.select().from(invites);
+  for (const inv of rows) {
+    if (inv.token !== inv.tokenDigest) {
+      await db.update(invites).set({ token: inv.tokenDigest }).where(eq(invites.id, inv.id));
+    }
+  }
 }
 
 export async function redeemInvite(userId: string, raw: string) {
@@ -356,6 +382,7 @@ export async function listCirclePeople(circleId: string) {
 }
 
 export async function activeInvite(circleId: string) {
+  await scrubLegacyInvitePlaintext();
   const rows = await db
     .select()
     .from(invites)
