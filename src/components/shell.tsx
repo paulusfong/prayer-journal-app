@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "@/app/actions";
 import { displayLabel } from "@/lib/ids";
@@ -14,7 +15,15 @@ export function Shell({ children, user, isOwner, approved }: Props) {
     <div className="shell">
       <header className="mast">
         <Link className="wordmark" href={approved ? "/" : user ? "/pending" : "/sign-in"}>
-          Prayer Journal
+          <Image
+            className="wordmark-mark"
+            src="/prayer-hands.png"
+            alt=""
+            width={40}
+            height={40}
+            priority
+          />
+          <span className="wordmark-text">Prayer Journal</span>
         </Link>
         {user ? (
           <nav className="nav">
@@ -22,7 +31,9 @@ export function Shell({ children, user, isOwner, approved }: Props) {
               <>
                 <Link href="/">Open</Link>
                 <Link href="/answered">Answered</Link>
-                <Link href="/requests/new">New request</Link>
+                <Link className="nav-cta" href="/requests/new">
+                  New request
+                </Link>
                 {isOwner ? <Link href="/circle">Circle</Link> : null}
               </>
             ) : null}
