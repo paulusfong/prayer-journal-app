@@ -23,6 +23,7 @@ import {
   unmarkPrayed,
   updateRequest,
 } from "@/lib/journal";
+import { INVITE_LINK_ONCE_COOKIE } from "@/lib/invite-flash";
 import { requireApproved, requireUser } from "@/lib/session";
 
 export async function requestMagicLink(formData: FormData) {
@@ -151,14 +152,15 @@ export async function rotateInvite() {
     process.env.NODE_ENV === "production" ||
     (process.env.BETTER_AUTH_URL ?? "").startsWith("https");
   // Raw join token is shown once via this short-lived cookie (not stored in DB).
-  (await cookies()).set("invite_link_once", issued.rawToken, {
+  // redirect → GET /circle so middleware can clear the cookie after display.
+  (await cookies()).set(INVITE_LINK_ONCE_COOKIE, issued.rawToken, {
     httpOnly: true,
     sameSite: "lax",
     secure,
     path: "/",
     maxAge: 60 * 10,
   });
-  revalidatePath("/circle");
+  redirect("/circle");
 }
 
 export async function decideMembership(membershipId: string, action: "approve" | "decline" | "revoke") {

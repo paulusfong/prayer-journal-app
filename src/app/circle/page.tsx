@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { INVITE_LINK_ONCE_COOKIE } from "@/lib/invite-flash";
 import { decideMembership, rotateInvite } from "@/app/actions";
 import { Shell } from "@/components/shell";
 import { displayLabel } from "@/lib/ids";
@@ -15,7 +16,7 @@ export default async function CirclePage() {
   const pending = people.filter((p) => p.membership.status === "pending");
   const members = people.filter((p) => p.membership.status === "approved");
   const base = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
-  const onceToken = (await cookies()).get("invite_link_once")?.value;
+  const onceToken = (await cookies()).get(INVITE_LINK_ONCE_COOKIE)?.value;
 
   return (
     <Shell user={user} isOwner approved>
