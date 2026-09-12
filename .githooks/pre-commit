@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Fast path: scoped unit tests for staged files. Mutation is on pre-push (too slow per commit).
+set -euo pipefail
+if [[ "${SKIP_PR_CHECK:-}" == "1" ]]; then
+  echo "SKIP_PR_CHECK=1 — skipping pre-commit unit check"
+  exit 0
+fi
+cd "$(git rev-parse --show-toplevel)"
+exec node scripts/check-pr.mjs --staged --unit-only

@@ -26,7 +26,10 @@ Without `RESEND_API_KEY`, messages are appended under `tmp/mails/<email>`. Reque
 
 ```bash
 npm test
+npm run check:pr   # same scoped unit + mutation as CI (vs origin/main)
 ```
+
+`npm install` points git hooks at `.githooks/`: **pre-commit** runs scoped unit tests on staged files; **pre-push** runs `check:pr` (includes mutation — can take several minutes). Bypass with `SKIP_PR_CHECK=1` or `--no-verify`.
 
 ## Production
 
