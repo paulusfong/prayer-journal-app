@@ -56,3 +56,6 @@ next-env.d.ts
 # Stryker
 .stryker-tmp/
 reports/
+
+# gstack local artifacts (CSO reports, session dumps)
+.gstack/
