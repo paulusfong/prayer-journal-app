@@ -1,0 +1,48 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":dependencyDashboard",
+    ":preserveSemverRanges"
+  ],
+  "labels": ["dependencies"],
+  "timezone": "America/New_York",
+  "schedule": ["before 10am on monday"],
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "rangeStrategy": "bump",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 10am on monday"]
+  },
+  "packageRules": [
+    {
+      "description": "Group non-major npm updates",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "npm non-major",
+      "automerge": false
+    },
+    {
+      "description": "Group Next + eslint-config-next",
+      "matchPackageNames": ["next", "eslint-config-next"],
+      "groupName": "nextjs"
+    },
+    {
+      "description": "Group React packages",
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"],
+      "groupName": "react"
+    },
+    {
+      "description": "Group Stryker",
+      "matchPackagePrefixes": ["@stryker-mutator/"],
+      "groupName": "stryker"
+    },
+    {
+      "description": "Major updates stay solo and need review",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    }
+  ]
+}
