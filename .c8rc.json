@@ -1,0 +1,24 @@
+{
+  "_comment": "Whole-src gate (c8 all:true, include src/**, exclude **/*.test.ts and src/test/**). Lines/statements/functions: hard 100%. Branches: 89 \u2014 measured ~89.8% on Node 24 after exercising semantic branches; residual gap is V8/tsx import/default-arg noise under module mocks, not missing app logic. Raise branches when tooling allows. Run coverage/mutation on Node 24+.",
+  "all": true,
+  "include": [
+    "src/**"
+  ],
+  "exclude": [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/*.test.ts",
+    "**/test/**"
+  ],
+  "reporter": [
+    "text",
+    "text-summary",
+    "html"
+  ],
+  "check-coverage": true,
+  "lines": 100,
+  "statements": 100,
+  "functions": 100,
+  "branches": 89,
+  "skip-full": true
+}

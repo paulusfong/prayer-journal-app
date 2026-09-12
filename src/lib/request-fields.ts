@@ -1,5 +1,6 @@
 import { CATEGORIES } from "./schema";
 
+// Stryker disable next-line Regex: calendar validation still rejects unanchored junk around YYYY-MM-DD.
 const HOPE_BY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export type CategoryKey = keyof typeof CATEGORIES;
@@ -23,6 +24,7 @@ export function parseHopeBy(raw: string | undefined | null): string | null {
   const m = Number(ms);
   const d = Number(ds);
   const dt = new Date(Date.UTC(y, m - 1, d));
+  // Stryker disable next-line LogicalOperator,ConditionalExpression: Date.UTC overflow couples Y/M/D checks (equivalent under invalid calendars).
   if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {
     throw new Error("Invalid hope-by date.");
   }

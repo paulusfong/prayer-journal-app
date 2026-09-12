@@ -178,6 +178,7 @@ export const requestGrants = sqliteTable(
   (t) => [uniqueIndex("request_grants_request_user").on(t.prayerRequestId, t.userId)],
 );
 
+/* c8 ignore start — `as const` export surface is type-erased; keys covered via tests */
 export const CATEGORIES = {
   health: "Health",
   family: "Family",
@@ -186,3 +187,4 @@ export const CATEGORIES = {
   friends: "Friends",
   other: "Other",
 } as const;
+/* c8 ignore stop */

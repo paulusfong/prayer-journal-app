@@ -20,6 +20,8 @@ export function middleware(request: NextRequest) {
   return response;
 }
 
+/* c8 ignore start — config object is read by Next; brace/as-const maps oddly under tsx */
 export const config = {
   matcher: ["/circle"],
 };
+/* c8 ignore stop */

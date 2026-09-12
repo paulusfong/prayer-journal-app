@@ -52,3 +52,7 @@ next-env.d.ts
 *.db
 .beads-credential-key
 .beads/proxieddb/
+
+# Stryker
+.stryker-tmp/
+reports/

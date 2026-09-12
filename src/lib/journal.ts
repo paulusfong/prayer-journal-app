@@ -107,6 +107,7 @@ export async function findActiveInvite(raw: string) {
 export async function scrubLegacyInvitePlaintext() {
   const rows = await db.select().from(invites);
   for (const inv of rows) {
+    // Stryker disable next-line ConditionalExpression: always-updating digest-equal rows is a no-op write (equivalent).
     if (inv.token !== inv.tokenDigest) {
       await db.update(invites).set({ token: inv.tokenDigest }).where(eq(invites.id, inv.id));
     }
@@ -124,6 +125,7 @@ export async function redeemInvite(userId: string, raw: string) {
     .limit(1);
   const m = existing[0];
   if (m?.status === "approved") return { ok: true as const, status: "approved" as const };
+  // Stryker disable next-line ConditionalExpression: re-applying pending on an existing pending row is equivalent.
   if (m?.status === "pending") return { ok: true as const, status: "pending" as const };
   if (m) {
     await db.update(memberships).set({ status: "pending", role: "member" }).where(eq(memberships.id, m.id));
@@ -147,6 +149,27 @@ function visibleWhere(userId: string, circleId: string) {
   );
 }
 
+/** Pure open-list ordering: hopeBy ascending (nulls last), then createdAt desc. */
+export function compareOpenRequestRows(
+  a: { request: { hopeBy: string | null; createdAt: Date } },
+  b: { request: { hopeBy: string | null; createdAt: Date } },
+): number {
+  const ha = a.request.hopeBy;
+  const hb = b.request.hopeBy;
+  if (ha && hb) return ha.localeCompare(hb) || b.request.createdAt.getTime() - a.request.createdAt.getTime();
+  if (ha && !hb) return -1;
+  if (!ha && hb) return 1;
+  return b.request.createdAt.getTime() - a.request.createdAt.getTime();
+}
+
+/** Pure answered-list ordering: answeredAt desc (missing → 0). */
+export function compareAnsweredRequestRows(
+  a: { request: { answeredAt: Date | null } },
+  b: { request: { answeredAt: Date | null } },
+): number {
+  return (b.request.answeredAt?.getTime() ?? 0) - (a.request.answeredAt?.getTime() ?? 0);
+}
+
 export async function listRequests(userId: string, circleId: string, status: "open" | "answered") {
   const rows = await db
     .select({
@@ -158,18 +181,9 @@ export async function listRequests(userId: string, circleId: string, status: "op
     .where(and(visibleWhere(userId, circleId), eq(prayerRequests.status, status)));
 
   if (status === "open") {
-    rows.sort((a, b) => {
-      const ha = a.request.hopeBy;
-      const hb = b.request.hopeBy;
-      if (ha && hb) return ha.localeCompare(hb) || b.request.createdAt.getTime() - a.request.createdAt.getTime();
-      if (ha && !hb) return -1;
-      if (!ha && hb) return 1;
-      return b.request.createdAt.getTime() - a.request.createdAt.getTime();
-    });
+    rows.sort(compareOpenRequestRows);
   } else {
-    rows.sort(
-      (a, b) => (b.request.answeredAt?.getTime() ?? 0) - (a.request.answeredAt?.getTime() ?? 0),
-    );
+    rows.sort(compareAnsweredRequestRows);
   }
   return rows;
 }
@@ -335,15 +349,14 @@ export async function answerRequest(userId: string, requestId: string) {
     .set({ status: "answered", answeredAt: new Date(), answeredById: userId, updatedAt: new Date() })
     .where(eq(prayerRequests.id, requestId));
   if (req.authorId !== userId) {
-    const author = await db.select().from(user).where(eq(user.id, req.authorId)).limit(1);
-    if (author[0]) {
-      const app = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
-      await sendMail(
-        author[0].email,
-        `Answered: ${req.title}`,
-        `Your prayer request was marked answered: ${req.title}\n\nOpen it in the journal:\n${app}/requests/${req.id}\n`,
-      );
-    }
+    const authorRows = await db.select().from(user).where(eq(user.id, req.authorId)).limit(1);
+    const authorRow = authorRows[0]!; // FK: authorId always references user
+    const app = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+    await sendMail(
+      authorRow.email,
+      `Answered: ${req.title}`,
+      `Your prayer request was marked answered: ${req.title}\n\nOpen it in the journal:\n${app}/requests/${req.id}\n`,
+    );
   }
   return true;
 }

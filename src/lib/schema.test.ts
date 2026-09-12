@@ -167,3 +167,13 @@ describe("schema", () => {
     assert.equal(configs.reduce((sum, config) => sum + config.columns.length, 0), 84);
   });
 });
+describe("CATEGORIES const object", () => {
+  it("exposes every label key (covers as-const export surface)", async () => {
+    const { CATEGORIES } = await import("./schema");
+    assert.equal(CATEGORIES.health, "Health");
+    assert.equal(CATEGORIES.other, "Other");
+    assert.equal(Object.keys(CATEGORIES).length, 6);
+    // Touch the binding again so the export statement stays hot under c8/tsx maps.
+    assert.ok("friends" in CATEGORIES);
+  });
+});
