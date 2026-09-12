@@ -26,8 +26,9 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24,
   },
   rateLimit: {
-    window: 60,
-    max: 10,
+    // Align roughly with app-level magic-link throttle (~5 / 3 min).
+    window: 180,
+    max: 5,
   },
   plugins: [
     magicLink({
