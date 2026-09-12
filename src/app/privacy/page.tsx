@@ -8,8 +8,8 @@ export default async function PrivacyPage() {
       <article className="panel">
         <h1>Privacy</h1>
         <p>
-          Prayer Journal stores your email address, the name you choose, and the prayer requests, updates, and notes
-          you write.
+          Prayer Journal stores your email address, the name you choose, the prayer requests, updates, and notes you
+          write, and any app comments or feature ideas you send.
         </p>
         <p>
           We do not sell this. We do not use analytics that phone home. Mail we send uses the request title and a

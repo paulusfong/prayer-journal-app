@@ -270,6 +270,10 @@ describe("app coverage", async () => {
     const profile = await import("@/app/profile/page");
     await renderElement(await profile.default());
 
+    const feedback = await import("@/app/feedback/page");
+    await renderElement(await feedback.default({ searchParams: Promise.resolve({}) }));
+    await renderElement(await feedback.default({ searchParams: Promise.resolve({ sent: "1" }) }));
+
     const neu = await import("@/app/requests/new/page");
     await renderElement(await neu.default());
 
@@ -364,6 +368,11 @@ describe("app coverage", async () => {
 
     await assert.rejects(() => actions.signOut(), NextRedirect);
     await assert.rejects(() => actions.saveProfile(fd({ displayName: "New" })), NextRedirect);
+    await assert.rejects(() => actions.submitAppFeedback(fd({})), NextRedirect);
+    await assert.rejects(
+      () => actions.submitAppFeedback(fd({ kind: "feature", body: "Please add dark mode" })),
+      NextRedirect,
+    );
 
     await assert.rejects(
       () => actions.createPrayerRequest(fd({ title: "From action", visibility: "circle" })),

@@ -164,6 +164,23 @@ export const prayerMarks = sqliteTable(
   (t) => [uniqueIndex("prayer_marks_request_user").on(t.prayerRequestId, t.userId)],
 );
 
+export const appFeedback = sqliteTable(
+  "app_feedback",
+  {
+    id: text("id").primaryKey(),
+    circleId: text("circle_id")
+      .notNull()
+      .references(() => circles.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["comment", "feature"] }).notNull().default("comment"),
+    body: text("body").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  },
+  (t) => [index("app_feedback_circle_idx").on(t.circleId)],
+);
+
 export const requestGrants = sqliteTable(
   "request_grants",
   {

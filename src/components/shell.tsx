@@ -33,6 +33,7 @@ export function Shell({ children, user, isOwner, approved }: Props) {
                 <Link className="nav-cta" href="/requests/new">
                   New request
                 </Link>
+                <Link href="/feedback">Feedback</Link>
                 {isOwner ? <Link href="/circle">Circle</Link> : null}
               </>
             ) : null}

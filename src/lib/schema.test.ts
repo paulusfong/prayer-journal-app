@@ -5,6 +5,7 @@ import { getTableConfig } from "drizzle-orm/sqlite-core";
 import {
   CATEGORIES,
   account,
+  appFeedback,
   circles,
   invites,
   memberships,
@@ -33,6 +34,7 @@ describe("schema", () => {
         requestUpdates,
         prayerNotes,
         prayerMarks,
+        appFeedback,
         requestGrants,
       ].map(getTableName),
       [
@@ -47,6 +49,7 @@ describe("schema", () => {
         "request_updates",
         "prayer_notes",
         "prayer_marks",
+        "app_feedback",
         "request_grants",
       ],
     );
@@ -119,6 +122,7 @@ describe("schema", () => {
       requestUpdates,
       prayerNotes,
       prayerMarks,
+      appFeedback,
       requestGrants,
     ].flatMap((table) =>
       getTableConfig(table).foreignKeys.map((foreignKey) =>
@@ -142,6 +146,8 @@ describe("schema", () => {
       "user",
       "prayer_requests",
       "user",
+      "circles",
+      "user",
       "prayer_requests",
       "user",
     ]);
@@ -160,11 +166,12 @@ describe("schema", () => {
       requestUpdates,
       prayerNotes,
       prayerMarks,
+      appFeedback,
       requestGrants,
     ].map(getTableConfig);
 
-    assert.equal(configs.length, 12);
-    assert.equal(configs.reduce((sum, config) => sum + config.columns.length, 0), 84);
+    assert.equal(configs.length, 13);
+    assert.equal(configs.reduce((sum, config) => sum + config.columns.length, 0), 90);
   });
 });
 describe("CATEGORIES const object", () => {

@@ -143,4 +143,16 @@ CREATE TABLE `verification` (
 	`updated_at` integer
 );
 --> statement-breakpoint
-CREATE INDEX `verification_identifier_idx` ON `verification` (`identifier`);
+CREATE INDEX `verification_identifier_idx` ON `verification` (`identifier`);--> statement-breakpoint
+CREATE TABLE `app_feedback` (
+	`id` text PRIMARY KEY NOT NULL,
+	`circle_id` text NOT NULL,
+	`author_id` text NOT NULL,
+	`kind` text DEFAULT 'comment' NOT NULL,
+	`body` text NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`circle_id`) REFERENCES `circles`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`author_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `app_feedback_circle_idx` ON `app_feedback` (`circle_id`);
