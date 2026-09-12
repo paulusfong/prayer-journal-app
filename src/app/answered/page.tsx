@@ -29,11 +29,6 @@ export default async function AnsweredPage() {
                     : null}
                 </p>
               </Link>
-              {request.authorId === user.id ? (
-                <p className="card-actions">
-                  <Link href={`/requests/${request.id}/edit`}>Edit</Link>
-                </p>
-              ) : null}
             </li>
           ))}
         </ul>
