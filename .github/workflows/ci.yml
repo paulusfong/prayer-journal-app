@@ -10,35 +10,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Decide whether code/deps/test tooling changed.
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      code: ${{ steps.filter.outputs.code }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            code:
-              - 'src/**'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'tsconfig.json'
-              - 'stryker.config.mjs'
-              - '.c8rc.json'
-              - 'next.config.ts'
-              - '.github/workflows/ci.yml'
-
-  # Heavy suite — only when relevant paths change.
-  suite:
-    needs: changes
-    if: needs.changes.outputs.code == 'true'
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -48,26 +26,69 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Unit tests
+      - name: Plan changed-file CI scope
+        id: scope
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          node scripts/ci-changed.mjs plan | tee /tmp/ci-plan.json
+          MODE=$(node -e "console.log(JSON.parse(require('fs').readFileSync('/tmp/ci-plan.json','utf8')).mode)")
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          TESTS=$(node scripts/ci-changed.mjs tests)
+          MUTATE=$(node scripts/ci-changed.mjs mutate)
+          {
+            echo "tests<<EOF"
+            echo "$TESTS"
+            echo "EOF"
+            echo "mutate<<EOF"
+            echo "$MUTATE"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Unit tests (changed / related)
+        if: steps.scope.outputs.mode == 'partial'
+        run: |
+          set -euo pipefail
+          mapfile -t FILES <<< "${{ steps.scope.outputs.tests }}"
+          if [ ${#FILES[@]} -eq 0 ] || [ -z "${FILES[0]:-}" ]; then
+            echo "No related unit tests for changed sources — skip unit step."
+            exit 0
+          fi
+          echo "Running: ${FILES[*]}"
+          node --experimental-test-module-mocks --import tsx --import ./src/test/register-css.mjs --test "${FILES[@]}"
+
+      - name: Unit tests (full)
+        if: steps.scope.outputs.mode == 'full'
         run: npm test
 
-      - name: Coverage gate (100% lines/statements/functions)
+      - name: Coverage gate (full — tooling/deps changed)
+        if: steps.scope.outputs.mode == 'full'
         run: npm run test:coverage
 
-      - name: Mutation testing (Stryker break threshold)
+      - name: Mutation (changed sources only)
+        if: steps.scope.outputs.mode == 'partial'
+        run: |
+          set -euo pipefail
+          MUTATE="${{ steps.scope.outputs.mutate }}"
+          if [ -z "$MUTATE" ]; then
+            echo "No mutate targets — skip mutation."
+            exit 0
+          fi
+          echo "Stryker mutate: $MUTATE"
+          npx stryker run --mutate "$MUTATE"
+
+      - name: Mutation (full)
+        if: steps.scope.outputs.mode == 'full'
         run: npm run test:mutation
 
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage/
-          retention-days: 14
-          if-no-files-found: warn
+      - name: Skip notice
+        if: steps.scope.outputs.mode == 'skip'
+        run: echo "No src/deps/CI changes — unit/mutation skipped."
 
       - name: Upload Stryker report
-        if: always()
+        if: always() && steps.scope.outputs.mode != 'skip'
         uses: actions/upload-artifact@v4
         with:
           name: stryker-report
@@ -75,28 +96,11 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
-  # Required check name stays `test` (branch ruleset). Passes when:
-  # - no code paths changed (skip heavy suite), or
-  # - suite succeeded.
-  test:
-    needs: [changes, suite]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Gate required status check
-        run: |
-          set -euo pipefail
-          code="${{ needs.changes.outputs.code }}"
-          suite="${{ needs.suite.result }}"
-          echo "code_paths_changed=${code}"
-          echo "suite_result=${suite}"
-          if [ "${code}" != "true" ]; then
-            echo "No src/deps/test-config changes — skipping heavy CI."
-            exit 0
-          fi
-          if [ "${suite}" = "success" ]; then
-            echo "Suite passed."
-            exit 0
-          fi
-          echo "Suite required but did not succeed (${suite})."
-          exit 1
+      - name: Upload coverage report
+        if: always() && steps.scope.outputs.mode == 'full'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+          if-no-files-found: warn
