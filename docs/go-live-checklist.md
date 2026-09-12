@@ -13,7 +13,7 @@ Assumption: you're hosting **one instance** for your circle (not a multi-tenant 
 
 ## 1. Hosting & data
 
-- [ ] Pick a host that can run Next.js 16 and keep a durable SQLite/libSQL file (or Turso). Ephemeral disk = lost journal.
+- [ ] Pick a host that can run Next.js 16 and keep a durable SQLite/libSQL file (or Turso). Ephemeral disk = lost journal. Default path: Vercel + Turso (`Deploy` workflow / `.github/scripts/deploy-prod.sh`).
 - [ ] HTTPS only; set `BETTER_AUTH_URL` to the **public** origin (no trailing slash mismatch)
 - [ ] Generate a long random `BETTER_AUTH_SECRET` (never reuse the local one)
 - [ ] Set `DATABASE_URL` to a persistent path/volume or Turso URL; confirm backups (daily snapshot is enough for family scale)

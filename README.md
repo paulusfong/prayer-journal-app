@@ -35,6 +35,11 @@ npm run check:pr   # same scoped unit + mutation as CI (vs origin/main)
 
 Shipping to a real circle? Follow [docs/go-live-checklist.md](docs/go-live-checklist.md).
 
+Host is **Vercel + Turso** (the app treats `VERCEL=1` as production mail). Do not use a `file:` SQLite URL on Vercel — the disk is ephemeral.
+
+- GitHub Action **Deploy** (push to `main` or *Run workflow*): needs secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, and a GitHub Environment named `production`.
+- Local: `DATABASE_URL=… DATABASE_AUTH_TOKEN=… bash .github/scripts/deploy-prod.sh`
+
 
 - `BETTER_AUTH_SECRET` — required
 - `BETTER_AUTH_URL` — public origin
