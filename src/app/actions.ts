@@ -29,6 +29,7 @@ import {
   clientIpFromHeaders,
   magicLinkThrottleKey,
 } from "@/lib/magic-link-throttle";
+import { requestLoggedDate } from "@/lib/request-fields";
 import { requireApproved, requireUser } from "@/lib/session";
 
 export async function requestMagicLink(formData: FormData) {
@@ -85,7 +86,11 @@ export async function saveProfile(formData: FormData) {
 
 export async function createPrayerRequest(formData: FormData) {
   const { user, membership } = await requireApproved();
-  const created = await createRequest(user.id, membership.circleId, formFrom(formData));
+  const created = await createRequest(user.id, membership.circleId, {
+    ...formFrom(formData),
+    // Request date = day logged (no hope-by picker).
+    hopeBy: requestLoggedDate(),
+  });
   revalidatePath("/");
   redirect(`/requests/${created.id}`);
 }
@@ -183,10 +188,8 @@ function formFrom(formData: FormData) {
   return {
     title: String(formData.get("title") ?? ""),
     body: String(formData.get("body") ?? ""),
-    whoFor: String(formData.get("whoFor") ?? ""),
     category: String(formData.get("category") ?? "") || undefined,
     categoryOther: String(formData.get("categoryOther") ?? ""),
-    hopeBy: String(formData.get("hopeBy") ?? "") || undefined,
     visibility: (String(formData.get("visibility") ?? "circle") === "private" ? "private" : "circle") as
       | "private"
       | "circle",

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Shell } from "@/components/shell";
 import { categoryLabel, listRequests } from "@/lib/journal";
 import { displayLabel } from "@/lib/ids";
+import { requestLoggedDate } from "@/lib/request-fields";
 import { requireApproved } from "@/lib/session";
 
 export default async function HomePage() {
@@ -27,13 +28,17 @@ export default async function HomePage() {
                 <p className="meta">
                   {request.visibility === "private" ? "Private · " : null}
                   {displayLabel(author)}
-                  {request.whoFor ? ` · for ${request.whoFor}` : null}
                   {categoryLabel(request.category, request.categoryOther)
                     ? ` · ${categoryLabel(request.category, request.categoryOther)}`
                     : null}
-                  {request.hopeBy ? ` · ${request.hopeBy}` : null}
+                  {` · ${requestLoggedDate(request.createdAt)}`}
                 </p>
               </Link>
+              {request.authorId === user.id ? (
+                <p className="card-actions">
+                  <Link href={`/requests/${request.id}/edit`}>Edit</Link>
+                </p>
+              ) : null}
             </li>
           ))}
         </ul>

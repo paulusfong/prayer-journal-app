@@ -14,6 +14,7 @@ import {
 import { Shell } from "@/components/shell";
 import { displayLabel } from "@/lib/ids";
 import { categoryLabel, requestDetail } from "@/lib/journal";
+import { requestLoggedDate } from "@/lib/request-fields";
 import { requireApproved } from "@/lib/session";
 
 export default async function RequestPage({ params }: { params: Promise<{ id: string }> }) {
@@ -34,11 +35,10 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
           {request.visibility === "private" ? "Private · " : null}
           {request.status === "answered" ? "Answered · " : null}
           {displayLabel(author)}
-          {request.whoFor ? ` · for ${request.whoFor}` : null}
           {categoryLabel(request.category, request.categoryOther)
             ? ` · ${categoryLabel(request.category, request.categoryOther)}`
             : null}
-          {request.hopeBy ? ` · ${request.hopeBy}` : null}
+          {` · ${requestLoggedDate(request.createdAt)}`}
         </p>
         <h1>{request.title}</h1>
         {request.body ? <div className="body">{request.body}</div> : null}

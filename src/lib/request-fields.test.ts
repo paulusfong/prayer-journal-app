@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { parseCategory, parseHopeBy } from "./request-fields";
+import { parseCategory, parseHopeBy, requestLoggedDate } from "./request-fields";
 
 describe("parseCategory", () => {
   it("accepts empty as null and known CATEGORIES keys", () => {
@@ -33,5 +33,27 @@ describe("parseHopeBy", () => {
     assert.throws(() => parseHopeBy("not-a-date"), /Invalid hope-by/);
     assert.throws(() => parseHopeBy("2025-02-29"), /Invalid hope-by/);
     assert.throws(() => parseHopeBy("2026-13-01"), /Invalid hope-by/);
+  });
+});
+
+describe("requestLoggedDate", () => {
+  it("returns YYYY-MM-DD for America/New_York", () => {
+    const d = new Date("2026-09-12T18:00:00Z"); // afternoon UTC → still Sep 12 ET
+    assert.match(requestLoggedDate(d), /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(requestLoggedDate(d), "2026-09-12");
+  });
+
+  it("uses America/New_York even when UTC is already the next calendar day", () => {
+    // Pin UTC so emptying DateTimeFormat options (runtime zone) cannot match EST.
+    const prevTz = process.env.TZ;
+    process.env.TZ = "UTC";
+    try {
+      // 04:00 UTC in January is 23:00 the previous day in EST (UTC-5).
+      const d = new Date("2026-01-15T04:00:00.000Z");
+      assert.equal(requestLoggedDate(d), "2026-01-14");
+    } finally {
+      if (prevTz === undefined) delete process.env.TZ;
+      else process.env.TZ = prevTz;
+    }
   });
 });

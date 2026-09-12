@@ -30,3 +30,13 @@ export function parseHopeBy(raw: string | undefined | null): string | null {
   }
   return value;
 }
+
+/** YYYY-MM-DD in America/New_York — the calendar day a request is logged. */
+export function requestLoggedDate(when: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(when);
+}

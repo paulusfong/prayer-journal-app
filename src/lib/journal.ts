@@ -247,13 +247,16 @@ export async function updateRequest(
   if (!req || req.authorId !== userId) return null;
   const wasPrivate = req.visibility === "private";
   const category = parseCategory(data.category);
-  const hopeBy = parseHopeBy(data.hopeBy);
+  // whoFor / hopeBy are no longer editable in the UI; only overwrite when callers pass them.
+  const whoFor =
+    data.whoFor !== undefined ? data.whoFor.slice(0, 80) || null : req.whoFor;
+  const hopeBy = data.hopeBy !== undefined ? parseHopeBy(data.hopeBy) : req.hopeBy;
   await db
     .update(prayerRequests)
     .set({
       title: data.title.trim().slice(0, 120),
       body: data.body?.slice(0, 2000) || null,
-      whoFor: data.whoFor?.slice(0, 80) || null,
+      whoFor,
       category,
       categoryOther: data.categoryOther?.slice(0, 80) || null,
       hopeBy,
