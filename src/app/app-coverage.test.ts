@@ -46,10 +46,6 @@ const fakeMembership = {
 };
 
 let sessionUser: typeof fakeUser | null = fakeUser;
-let approved: { user: typeof fakeUser; membership: typeof fakeMembership } | null = {
-  user: fakeUser,
-  membership: fakeMembership,
-};
 
 const authApi: {
   getSession: (...args: unknown[]) => Promise<{ user: typeof fakeUser } | null>;
@@ -62,7 +58,7 @@ const authApi: {
   signInMagicLink: async () => ({}),
   magicLinkVerify: async () => ({}),
   signOut: async () => ({}),
-  handler: async (_req: Request) => new Response("auth-ok", { status: 200 }),
+  handler: async () => new Response("auth-ok", { status: 200 }),
 };
 
 mock.module("@/lib/auth", {
@@ -90,8 +86,6 @@ describe("app coverage", async () => {
 
   let requestId = "";
   let memberId = "";
-  let noteId = "";
-  let updateId = "";
 
   before(async () => {
     resetHarness();
@@ -137,8 +131,8 @@ describe("app coverage", async () => {
     await journal.addNote(memberId, requestId, "note");
     await journal.addUpdate(ownerId, requestId, "update");
     const detail = await journal.requestDetail(ownerId, mem!.circleId, requestId);
-    noteId = detail!.notes[0]!.note.id;
-    updateId = detail!.updates[0]!.update.id;
+    assert.ok(detail!.notes[0]);
+    assert.ok(detail!.updates[0]);
   });
 
   it("middleware clears invite flash on /circle", async () => {
@@ -232,26 +226,15 @@ describe("app coverage", async () => {
 
   it("renders Shell variants", async () => {
     const { Shell } = await import("@/components/shell");
-    const html1 = await renderElement(
-      React.createElement(Shell, { children: "c" }),
-    );
+    const html1 = await renderElement(React.createElement(Shell, null, "c"));
     assert.match(html1, /Prayer Journal/);
     const html2 = await renderElement(
-      React.createElement(Shell, {
-        children: "c",
-        user: fakeUser,
-        approved: true,
-        isOwner: true,
-      }),
+      React.createElement(Shell, { user: fakeUser, approved: true, isOwner: true }, "c"),
     );
     assert.match(html2, /Answered/);
     assert.match(html2, /Circle/);
     const html3 = await renderElement(
-      React.createElement(Shell, {
-        children: "c",
-        user: fakeUser,
-        approved: false,
-      }),
+      React.createElement(Shell, { user: fakeUser, approved: false }, "c"),
     );
     assert.match(html3, /Sign out/);
   });

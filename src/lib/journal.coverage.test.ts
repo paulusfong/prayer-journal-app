@@ -25,7 +25,6 @@ describe("journal coverage", async () => {
   let privateReqId = "";
   let answeredReqId = "";
 
-  const mails: Array<{ to: string; subject: string }> = [];
   const originalFetch = globalThis.fetch;
 
   before(async () => {

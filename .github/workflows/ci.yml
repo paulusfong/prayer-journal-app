@@ -39,7 +39,6 @@ jobs:
           TESTS=$(node scripts/ci-changed.mjs tests)
           MUTATE=$(node scripts/ci-changed.mjs mutate)
           MUTATE_TESTS=$(node scripts/ci-changed.mjs mutate-tests)
-          LINT=$(node scripts/ci-changed.mjs lint)
           {
             echo "tests<<EOF"
             echo "$TESTS"
@@ -50,21 +49,10 @@ jobs:
             echo "mutate_tests<<EOF"
             echo "$MUTATE_TESTS"
             echo "EOF"
-            echo "lint<<EOF"
-            echo "$LINT"
-            echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: ESLint (changed files)
-        run: |
-          set -euo pipefail
-          mapfile -t FILES <<< "${{ steps.scope.outputs.lint }}"
-          if [ ${#FILES[@]} -eq 0 ] || [ -z "${FILES[0]:-}" ]; then
-            echo "No JS/TS changes — skip eslint."
-            exit 0
-          fi
-          echo "Linting: ${FILES[*]}"
-          npx eslint "${FILES[@]}"
+      - name: ESLint
+        run: npm run lint
 
       - name: Unit tests (changed / related)
         if: steps.scope.outputs.mode == 'partial'

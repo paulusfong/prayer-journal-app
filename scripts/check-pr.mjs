@@ -38,14 +38,7 @@ export function parseArgs(argv) {
 }
 
 export function stepsForPlan(plan, { unitOnly = false } = {}) {
-  const steps = [];
-  if (plan.lintFiles?.length) {
-    steps.push({
-      label: "ESLint (changed files)",
-      cmd: "npx",
-      args: ["eslint", ...plan.lintFiles],
-    });
-  }
+  const steps = [{ label: "ESLint", cmd: "npm", args: ["run", "lint"] }];
   if (plan.mode === "skip") return steps;
   if (plan.mode === "full") {
     steps.push({ label: "Unit tests (full)", cmd: "npm", args: ["test"] });

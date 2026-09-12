@@ -3,15 +3,14 @@
  * Decide which unit tests / Stryker mutate targets to run for a PR (or push).
  *
  * Usage:
- *   node scripts/ci-changed.mjs mode=plan|tests|mutate|mutate-tests|lint|full?
+ *   node scripts/ci-changed.mjs mode=plan|tests|mutate|mutate-tests|full?
  *   CI_BASE_SHA / CI_HEAD_SHA optional (defaults: origin/main...HEAD for PRs)
  *
  * Prints:
- *   plan         -> JSON { mode, testFiles, mutateFiles, mutateTestFiles, lintFiles, reason }
+ *   plan         -> JSON { mode, testFiles, mutateFiles, mutateTestFiles, reason }
  *   tests        -> newline-separated unit test files (or FULL)
  *   mutate       -> comma-separated Stryker mutate paths (or FULL)
  *   mutate-tests -> newline-separated tests Stryker should run for those mutants
- *   lint         -> newline-separated changed JS/TS files (never the whole repo)
  * Exit 0 always for plan/tests/mutate when skip; exit 2 on unexpected error.
  */
 import { execSync } from "node:child_process";
@@ -47,10 +46,6 @@ export function isMutateTarget(f) {
     !f.includes(".test.") &&
     !STRYKER_EXCLUDED.has(f)
   );
-}
-
-export function isLintTarget(f) {
-  return /\.(mjs|cjs|js|jsx|ts|tsx)$/.test(f);
 }
 
 export function forceFull(files) {
@@ -94,26 +89,19 @@ function mutationKillTests(exists = fs.existsSync) {
   return ["src/lib/mutation-kill.test.ts", "src/lib/mutation-kill-db.test.ts"].filter(exists);
 }
 
-function withLint(files, plan, exists) {
-  return {
-    ...plan,
-    lintFiles: files.filter((f) => isLintTarget(f) && exists(f)).sort(),
-  };
-}
-
 export function planFromChangedFiles(files, { exists = fs.existsSync, listDir = fs.readdirSync } = {}) {
   if (files.length === 0) {
-    return withLint(files, { mode: "skip", testFiles: [], mutateFiles: [], mutateTestFiles: [], reason: "no file changes detected" }, exists);
+    return { mode: "skip", testFiles: [], mutateFiles: [], mutateTestFiles: [], reason: "no file changes detected" };
   }
   if (forceFull(files)) {
-    return withLint(files, {
+    return {
       mode: "full",
       testFiles: ["FULL"],
       mutateFiles: ["FULL"],
       mutateTestFiles: ["FULL"],
       reason: "deps or test-harness config changed",
       changed: files,
-    }, exists);
+    };
   }
 
   const sources = files.filter(isSource);
@@ -134,23 +122,23 @@ export function planFromChangedFiles(files, { exists = fs.existsSync, listDir = 
   const mutateTestFiles = [...mutateTestSet].filter((p) => exists(p)).sort();
 
   if (testFiles.length === 0 && mutateFiles.length === 0) {
-    return withLint(files, {
+    return {
       mode: "skip",
       testFiles: [],
       mutateFiles: [],
       mutateTestFiles: [],
       reason: "no src/harness changes (docs, workflow YAML, gitignore, etc.)",
       changed: files,
-    }, exists);
+    };
   }
-  return withLint(files, {
+  return {
     mode: "partial",
     testFiles,
     mutateFiles,
     mutateTestFiles,
     reason: "src changes — scoped tests/mutation",
     changed: files,
-  }, exists);
+  };
 }
 
 function sh(cmd) {
@@ -219,10 +207,6 @@ export function printMode(mode, result) {
     if (result.mode === "skip") console.log("");
     else if (result.mode === "full") console.log("FULL");
     else console.log(result.mutateTestFiles.join("\n"));
-    return 0;
-  }
-  if (mode === "lint") {
-    console.log((result.lintFiles || []).join("\n"));
     return 0;
   }
   console.error(`unknown mode: ${mode}`);
