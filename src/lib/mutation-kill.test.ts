@@ -1,8 +1,5 @@
 import assert from "node:assert/strict";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
-import { afterEach, before, describe, it } from "node:test";
+import { afterEach, describe, it } from "node:test";
 import {
   MAGIC_LINK_THROTTLE_MAX,
   MAGIC_LINK_THROTTLE_WINDOW_MS,
@@ -11,7 +8,7 @@ import {
   magicLinkThrottleKey,
   resetMagicLinkThrottleForTests,
 } from "./magic-link-throttle";
-import { inviteTokenFromCookieHeader, canRequestMagicLink } from "./auth-gate";
+import { inviteTokenFromCookieHeader } from "./auth-gate";
 import { shouldClearInviteLinkOnce } from "./invite-flash";
 import { blockedMagicLinkVerifyResponse } from "./magic-link-verify-guard";
 import { parseCategory, parseHopeBy } from "./request-fields";

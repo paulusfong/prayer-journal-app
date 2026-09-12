@@ -3,12 +3,11 @@ import Link from "next/link";
 import { signOut } from "@/app/actions";
 import { displayLabel } from "@/lib/ids";
 
-type Props = {
-  children: React.ReactNode;
+type Props = React.PropsWithChildren<{
   user?: { email: string; name?: string | null; displayName?: string | null };
   isOwner?: boolean;
   approved?: boolean;
-};
+}>;
 
 export function Shell({ children, user, isOwner, approved }: Props) {
   return (
