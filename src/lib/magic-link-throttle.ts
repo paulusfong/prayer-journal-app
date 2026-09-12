@@ -21,9 +21,11 @@ export function magicLinkThrottleKey(email: string, ip?: string | null) {
 export function clientIpFromHeaders(h: Headers): string | null {
   const xff = h.get("x-forwarded-for");
   if (xff) {
+    // Stryker disable next-line OptionalChaining: String#split always yields a defined [0].
     const first = xff.split(",")[0]?.trim();
     if (first) return first;
   }
+  // Stryker disable next-line MethodExpression: Fetch Headers#get already trims values.
   return h.get("x-real-ip")?.trim() || null;
 }
 
@@ -33,6 +35,7 @@ export function allowMagicLinkRequest(key: string, now = Date.now()): boolean {
   const cutoff = now - WINDOW_MS;
   const prev = (hits.get(key) ?? []).filter((t) => t > cutoff);
   if (prev.length >= MAX_REQUESTS) {
+    // Stryker disable next-line CallExpression: pruning on reject only affects GC of old timestamps; filter recomputes.
     hits.set(key, prev);
     return false;
   }
