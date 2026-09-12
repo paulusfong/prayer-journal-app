@@ -1,47 +1,93 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { describe, it } from "node:test";
+import {
+  forceFull,
+  isMutateTarget,
+  planFromChangedFiles,
+} from "./ci-changed.mjs";
 
-function planWithDiff(names) {
-  // Simulate by checking forceFull logic via a tiny inline copy of rules
-  const triggers = [
-    "package.json",
-    "package-lock.json",
-    "tsconfig.json",
-    "stryker.config.mjs",
-    ".c8rc.json",
-    "next.config.ts",
-    "scripts/ci-changed.mjs",
-  ];
-  const forceFull = names.some((f) => triggers.includes(f) || f.startsWith("scripts/"));
-  const isSource = (f) =>
-    f.startsWith("src/") &&
-    (f.endsWith(".ts") || f.endsWith(".tsx")) &&
-    !f.includes(".test.") &&
-    !f.startsWith("src/test/");
-  if (forceFull) return "full";
-  if (names.some(isSource) || names.some((f) => f.includes(".test."))) return "partial";
-  return "skip";
-}
+const files = new Set([
+  "src/lib/journal.ts",
+  "src/lib/journal.coverage.test.ts",
+  "src/lib/journal.authz.test.ts",
+  "src/lib/request-fields.ts",
+  "src/lib/request-fields.test.ts",
+  "src/lib/mutation-kill.test.ts",
+  "src/lib/mutation-kill-db.test.ts",
+  "src/lib/schema.ts",
+  "src/lib/schema.test.ts",
+  "src/lib/auth.ts",
+  "src/app/page.tsx",
+  "src/app/app-coverage.test.ts",
+  "src/components/shell.tsx",
+]);
+
+const exists = (f) => files.has(f);
+const listDir = (dir) => {
+  const prefix = `${dir}/`;
+  return [...files]
+    .filter((f) => f.startsWith(prefix) && !f.slice(prefix.length).includes("/"))
+    .map((f) => f.slice(prefix.length));
+};
+const io = { exists, listDir };
 
 describe("ci-changed forceFull policy", () => {
   it("does not force full for workflow/docs/gitignore only", () => {
-    assert.equal(
-      planWithDiff([
-        ".github/workflows/ci.yml",
-        "docs/github-workflows/ci.yml",
-        ".gitignore",
-      ]),
-      "skip",
-    );
+    assert.equal(forceFull([".github/workflows/ci.yml", "docs/github-workflows/ci.yml", ".gitignore"]), false);
   });
 
   it("forces full for package-lock or scripts", () => {
-    assert.equal(planWithDiff(["package-lock.json"]), "full");
-    assert.equal(planWithDiff(["scripts/ci-changed.mjs"]), "full");
+    assert.equal(forceFull(["package-lock.json"]), true);
+    assert.equal(forceFull(["scripts/ci-changed.mjs"]), true);
   });
 
-  it("uses partial for src changes", () => {
-    assert.equal(planWithDiff(["src/lib/journal.ts"]), "partial");
+  it("uses skip for workflow-only and partial for src", () => {
+    assert.equal(planFromChangedFiles([".github/workflows/ci.yml"], io).mode, "skip");
+    assert.equal(planFromChangedFiles(["src/lib/journal.ts"], io).mode, "partial");
+  });
+});
+
+describe("stryker mutate allowlist", () => {
+  it("mutates src/lib business modules only", () => {
+    assert.equal(isMutateTarget("src/lib/journal.ts"), true);
+    assert.equal(isMutateTarget("src/lib/request-fields.ts"), true);
+    assert.equal(isMutateTarget("src/app/page.tsx"), false);
+    assert.equal(isMutateTarget("src/components/shell.tsx"), false);
+    assert.equal(isMutateTarget("src/lib/journal.coverage.test.ts"), false);
+    assert.equal(isMutateTarget("src/lib/schema.ts"), false);
+    assert.equal(isMutateTarget("src/lib/auth.ts"), false);
+    assert.equal(isMutateTarget("src/lib/db.ts"), false);
+  });
+
+  it("scopes PR #18-style UI+lib diffs to lib mutate targets and lib tests", () => {
+    const plan = planFromChangedFiles(
+      [
+        "src/app/page.tsx",
+        "src/app/actions.ts",
+        "src/components/shell.tsx",
+        "src/lib/journal.ts",
+        "src/lib/request-fields.ts",
+        "src/lib/request-fields.test.ts",
+        "public/icon.png",
+      ],
+      io,
+    );
+    assert.equal(plan.mode, "partial");
+    assert.deepEqual(plan.mutateFiles, ["src/lib/journal.ts", "src/lib/request-fields.ts"]);
+    assert.ok(plan.mutateTestFiles.includes("src/lib/journal.coverage.test.ts"));
+    assert.ok(plan.mutateTestFiles.includes("src/lib/request-fields.test.ts"));
+    assert.ok(plan.mutateTestFiles.includes("src/lib/mutation-kill.test.ts"));
+    assert.equal(
+      plan.mutateTestFiles.includes("src/app/app-coverage.test.ts"),
+      false,
+    );
+  });
+
+  it("skips mutation when only UI sources change", () => {
+    const plan = planFromChangedFiles(["src/app/page.tsx", "src/components/shell.tsx"], io);
+    assert.equal(plan.mode, "partial");
+    assert.deepEqual(plan.mutateFiles, []);
+    assert.deepEqual(plan.mutateTestFiles, []);
+    assert.ok(plan.testFiles.includes("src/app/app-coverage.test.ts"));
   });
 });
