@@ -16,9 +16,6 @@ export default async function NewRequestPage() {
           <label htmlFor="body">The ask (optional)</label>
           <textarea id="body" name="body" rows={5} maxLength={2000} />
 
-          <label htmlFor="whoFor">Who is this for? (optional)</label>
-          <input id="whoFor" name="whoFor" maxLength={80} />
-
           <label htmlFor="category">Category (optional)</label>
           <select id="category" name="category" defaultValue="">
             <option value="">None</option>
@@ -31,9 +28,6 @@ export default async function NewRequestPage() {
 
           <label htmlFor="categoryOther">If other, say what</label>
           <input id="categoryOther" name="categoryOther" maxLength={80} />
-
-          <label htmlFor="hopeBy">Hope-by date (optional)</label>
-          <input id="hopeBy" name="hopeBy" type="date" />
 
           <fieldset>
             <legend>Who can see this</legend>
