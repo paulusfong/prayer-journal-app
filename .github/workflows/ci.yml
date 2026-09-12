@@ -1,5 +1,3 @@
-# Promote to `.github/workflows/ci.yml` with a token that has the `workflow` scope
-# (GitHub blocks PAT pushes that create workflow files without that scope).
 name: CI
 
 on:
@@ -12,7 +10,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  # Decide whether code/deps/test tooling changed.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - 'src/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'tsconfig.json'
+              - 'stryker.config.mjs'
+              - '.c8rc.json'
+              - 'next.config.ts'
+              - '.github/workflows/ci.yml'
+
+  # Heavy suite — only when relevant paths change.
+  suite:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -40,8 +62,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: |
-            coverage/
+          path: coverage/
           retention-days: 14
           if-no-files-found: warn
 
@@ -50,7 +71,32 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: stryker-report
-          path: |
-            reports/
+          path: reports/
           retention-days: 14
           if-no-files-found: warn
+
+  # Required check name stays `test` (branch ruleset). Passes when:
+  # - no code paths changed (skip heavy suite), or
+  # - suite succeeded.
+  test:
+    needs: [changes, suite]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate required status check
+        run: |
+          set -euo pipefail
+          code="${{ needs.changes.outputs.code }}"
+          suite="${{ needs.suite.result }}"
+          echo "code_paths_changed=${code}"
+          echo "suite_result=${suite}"
+          if [ "${code}" != "true" ]; then
+            echo "No src/deps/test-config changes — skipping heavy CI."
+            exit 0
+          fi
+          if [ "${suite}" = "success" ]; then
+            echo "Suite passed."
+            exit 0
+          fi
+          echo "Suite required but did not succeed (${suite})."
+          exit 1
