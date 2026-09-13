@@ -61,6 +61,8 @@ describe("app feedback", async () => {
   it("stores member feedback; only owner can list", async () => {
     assert.equal(await feedback.addAppFeedback(memberId, "feature", "  Dark mode  "), true);
     assert.equal(await feedback.addAppFeedback(ownerId, "nope", "Works on my phone"), true);
+    // Kill: membership.role !== "owner" → false (must still hide list from members once rows exist).
+    assert.deepEqual(await feedback.listAppFeedback(memberId), []);
     const rows = await feedback.listAppFeedback(ownerId);
     assert.equal(rows.length, 2);
     const feature = rows.find((r) => r.kind === "feature");
@@ -68,5 +70,16 @@ describe("app feedback", async () => {
     assert.equal(feature!.body, "Dark mode");
     assert.equal(feature!.authorName, "Mem");
     assert.equal(comment!.body, "Works on my phone");
+  });
+
+  it("truncates body to 2000 characters", async () => {
+    const long = "x".repeat(2500);
+    assert.equal(await feedback.addAppFeedback(memberId, "comment", long), true);
+    const rows = await feedback.listAppFeedback(ownerId);
+    const latest = rows.find((r) => r.body.startsWith("x"));
+    assert.ok(latest);
+    assert.equal(latest!.body.length, 2000);
+    // Kill: .slice(0, 2000) removed — body would be 2500.
+    assert.notEqual(latest!.body.length, 2500);
   });
 });
