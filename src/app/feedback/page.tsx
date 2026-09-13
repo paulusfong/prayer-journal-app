@@ -2,6 +2,7 @@ import { submitAppFeedback } from "@/app/actions";
 import { Shell } from "@/components/shell";
 import { listAppFeedback } from "@/lib/feedback";
 import { displayLabel } from "@/lib/ids";
+import { getRequestDictionary } from "@/lib/i18n";
 import { requireApproved } from "@/lib/session";
 
 export default async function FeedbackPage({
@@ -10,44 +11,46 @@ export default async function FeedbackPage({
   searchParams: Promise<{ sent?: string }>;
 }) {
   const { user, membership } = await requireApproved();
+  const { locale, dict } = await getRequestDictionary();
   const { sent } = await searchParams;
   const isOwner = membership.role === "owner";
   const items = isOwner ? await listAppFeedback(user.id) : [];
+  const f = dict.feedback;
 
   return (
-    <Shell user={user} isOwner={isOwner} approved>
+    <Shell user={user} isOwner={isOwner} approved dict={dict} locale={locale}>
       <section className="panel">
-        <h1>About this app</h1>
-        <p className="lede">A feature idea or a short comment. The circle owner can read it.</p>
-        {sent ? <p className="flash">Thanks — it was saved.</p> : null}
+        <h1>{f.title}</h1>
+        <p className="lede">{f.lede}</p>
+        {sent ? <p className="flash">{f.thanks}</p> : null}
         <form action={submitAppFeedback}>
           <fieldset>
-            <legend>What is this</legend>
+            <legend>{f.kindLegend}</legend>
             <label className="choice">
-              <input type="radio" name="kind" value="comment" defaultChecked /> Comment
+              <input type="radio" name="kind" value="comment" defaultChecked /> {f.kindComment}
             </label>
             <label className="choice">
-              <input type="radio" name="kind" value="feature" /> Feature request
+              <input type="radio" name="kind" value="feature" /> {f.kindFeature}
             </label>
           </fieldset>
-          <label htmlFor="body">Your note</label>
+          <label htmlFor="body">{f.bodyLabel}</label>
           <textarea id="body" name="body" rows={5} required maxLength={2000} />
           <p>
-            <button type="submit">Send</button>
+            <button type="submit">{f.submit}</button>
           </p>
         </form>
       </section>
       {isOwner ? (
         <section className="panel">
-          <h2>Received</h2>
+          <h2>{f.received}</h2>
           {items.length === 0 ? (
-            <p className="muted">Nothing yet.</p>
+            <p className="muted">{f.empty}</p>
           ) : (
             <ul className="people">
               {items.map((row) => (
                 <li key={row.id}>
                   <span>
-                    <strong>{row.kind === "feature" ? "Feature" : "Comment"}</strong>
+                    <strong>{row.kind === "feature" ? f.kindFeatureShort : f.kindCommentShort}</strong>
                     {" · "}
                     {displayLabel({
                       email: row.authorEmail,

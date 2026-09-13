@@ -13,13 +13,15 @@ import {
 } from "@/app/actions";
 import { Shell } from "@/components/shell";
 import { displayLabel } from "@/lib/ids";
-import { categoryLabel, requestDetail } from "@/lib/journal";
+import { getRequestDictionary, localizedCategoryLabel, t } from "@/lib/i18n";
+import { requestDetail } from "@/lib/journal";
 import { requestLoggedDate } from "@/lib/request-fields";
 import { requireApproved } from "@/lib/session";
 
 export default async function RequestPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { user, membership } = await requireApproved();
+  const { locale, dict } = await getRequestDictionary();
   const detail = await requestDetail(user.id, membership.circleId, id);
   if (!detail) notFound();
 
@@ -27,46 +29,49 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
   const mine = request.authorId === user.id;
   const prayed = marks.some((m) => m.mark.userId === user.id);
   const open = request.status === "open";
+  const category = localizedCategoryLabel(dict, request.category, request.categoryOther);
+  const prayedLabel =
+    marks.length === 1
+      ? t(dict, "request.personPrayed", { count: marks.length })
+      : t(dict, "request.peoplePrayed", { count: marks.length });
 
   return (
-    <Shell user={user} isOwner={membership.role === "owner"} approved>
+    <Shell user={user} isOwner={membership.role === "owner"} approved dict={dict} locale={locale}>
       <article>
         <p className="eyebrow">
-          {request.visibility === "private" ? "Private · " : null}
-          {request.status === "answered" ? "Answered · " : null}
+          {request.visibility === "private" ? `${dict.request.private} · ` : null}
+          {request.status === "answered" ? `${dict.request.answered} · ` : null}
           {displayLabel(author)}
-          {categoryLabel(request.category, request.categoryOther)
-            ? ` · ${categoryLabel(request.category, request.categoryOther)}`
-            : null}
+          {category ? ` · ${category}` : null}
           {` · ${requestLoggedDate(request.createdAt)}`}
         </p>
         <h1>{request.title}</h1>
         {request.body ? <div className="body">{request.body}</div> : null}
         <p className="prayed">
-          {marks.length} {marks.length === 1 ? "person" : "people"} prayed
+          {prayedLabel}
           {marks.length ? ` · ${marks.map((m) => displayLabel(m.person)).join(", ")}` : null}
         </p>
         <div className="actions">
           {open ? (
             <>
               <form action={prayed ? unpray.bind(null, request.id) : pray.bind(null, request.id)}>
-                <button type="submit">{prayed ? "I prayed — undo" : "I prayed"}</button>
+                <button type="submit">{prayed ? dict.request.iPrayedUndo : dict.request.iPrayed}</button>
               </form>
               <form action={markAnswered.bind(null, request.id)}>
-                <button type="submit">Mark answered</button>
+                <button type="submit">{dict.request.markAnswered}</button>
               </form>
             </>
           ) : (
             <form action={reopen.bind(null, request.id)}>
-              <button type="submit">Reopen</button>
+              <button type="submit">{dict.request.reopen}</button>
             </form>
           )}
           {mine ? (
             <>
-              <Link href={`/requests/${request.id}/edit`}>Edit</Link>
+              <Link href={`/requests/${request.id}/edit`}>{dict.request.edit}</Link>
               <form action={removePrayerRequest.bind(null, request.id)}>
                 <button type="submit" className="text-btn danger">
-                  Delete
+                  {dict.request.delete}
                 </button>
               </form>
             </>
@@ -75,9 +80,9 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
       </article>
 
       <section className="panel">
-        <h2>Updates</h2>
+        <h2>{dict.request.updates}</h2>
         {updates.length === 0 ? (
-          <p className="muted">No updates yet.</p>
+          <p className="muted">{dict.request.noUpdates}</p>
         ) : (
           <ol className="timeline">
             {updates.map(({ update, person }) => (
@@ -87,7 +92,7 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
                 {person.id === user.id ? (
                   <form action={removeUpdate.bind(null, request.id, update.id)}>
                     <button type="submit" className="text-btn">
-                      Remove
+                      {dict.request.remove}
                     </button>
                   </form>
                 ) : null}
@@ -97,19 +102,19 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
         )}
         {mine ? (
           <form action={postUpdate.bind(null, request.id)}>
-            <label htmlFor="update">Add an update</label>
+            <label htmlFor="update">{dict.request.addUpdateLabel}</label>
             <textarea id="update" name="body" rows={3} maxLength={2000} required />
             <p>
-              <button type="submit">Add update</button>
+              <button type="submit">{dict.request.addUpdate}</button>
             </p>
           </form>
         ) : null}
       </section>
 
       <section className="panel">
-        <h2>Notes</h2>
+        <h2>{dict.request.notes}</h2>
         {notes.length === 0 ? (
-          <p className="muted">No notes yet.</p>
+          <p className="muted">{dict.request.noNotes}</p>
         ) : (
           <ul className="notes">
             {notes.map(({ note, person }) => (
@@ -120,7 +125,7 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
                 {person.id === user.id ? (
                   <form action={removeNote.bind(null, request.id, note.id)}>
                     <button type="submit" className="text-btn">
-                      Remove
+                      {dict.request.remove}
                     </button>
                   </form>
                 ) : null}
@@ -130,10 +135,10 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
         )}
         {open ? (
           <form action={postNote.bind(null, request.id)}>
-            <label htmlFor="note">Leave a short note</label>
+            <label htmlFor="note">{dict.request.addNoteLabel}</label>
             <textarea id="note" name="body" rows={2} maxLength={280} required />
             <p>
-              <button type="submit">Add note</button>
+              <button type="submit">{dict.request.addNote}</button>
             </p>
           </form>
         ) : null}

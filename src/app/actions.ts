@@ -25,6 +25,13 @@ import {
 } from "@/lib/journal";
 import { INVITE_LINK_ONCE_COOKIE } from "@/lib/invite-flash";
 import {
+  LOCALE_COOKIE,
+  localeCookieInit,
+  parseLocale,
+  pathFromReferer,
+  safeReturnPath,
+} from "@/lib/i18n/locales";
+import {
   allowMagicLinkRequest,
   clientIpFromHeaders,
   magicLinkThrottleKey,
@@ -209,4 +216,19 @@ function formFrom(formData: FormData) {
   };
 }
 
-
+export async function setLocale(formData: FormData) {
+  const locale = parseLocale(formData.get("locale"));
+  if (locale) {
+    const secure =
+      process.env.NODE_ENV === "production" ||
+      (process.env.BETTER_AUTH_URL ?? "").startsWith("https");
+    (await cookies()).set(LOCALE_COOKIE, locale, localeCookieInit(secure));
+  }
+  revalidatePath("/", "layout");
+  const next = formData.get("next");
+  const target =
+    typeof next === "string" && next.trim()
+      ? safeReturnPath(next)
+      : pathFromReferer((await headers()).get("referer"));
+  redirect(target);
+}

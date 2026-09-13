@@ -1,5 +1,6 @@
 import { requestMagicLink } from "@/app/actions";
 import { Shell } from "@/components/shell";
+import { getRequestDictionary } from "@/lib/i18n";
 import { getSessionUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 
@@ -11,18 +12,19 @@ export default async function SignInPage({
   const user = await getSessionUser();
   if (user) redirect("/");
   const { sent } = await searchParams;
+  const { locale, dict } = await getRequestDictionary();
 
   return (
-    <Shell>
+    <Shell dict={dict} locale={locale}>
       <section className="panel auth">
-        <h1>Sign in</h1>
-        <p className="lede">We’ll email you a link. No password.</p>
-        {sent ? <p className="flash">Check your email for a sign-in link.</p> : null}
+        <h1>{dict.signIn.title}</h1>
+        <p className="lede">{dict.signIn.lede}</p>
+        {sent ? <p className="flash">{dict.signIn.sent}</p> : null}
         <form action={requestMagicLink}>
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">{dict.signIn.email}</label>
           <input id="email" name="email" type="email" required autoFocus autoComplete="email" />
           <p>
-            <button type="submit">Send link</button>
+            <button type="submit">{dict.signIn.sendLink}</button>
           </p>
         </form>
       </section>

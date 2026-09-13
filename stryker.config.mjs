@@ -28,6 +28,9 @@ const config = {
         "!src/lib/schema.ts",
         // DB client bootstrap.
         "!src/lib/db.ts",
+        // Translation tables — string-literal mutants are noise.
+        "!src/lib/i18n/dictionaries/**",
+        "!src/lib/i18n/index.ts",
       ],
   reporters: ["progress", "clear-text", "html"],
   // Aim to break unless essentially all non-equivalent mutants are killed.

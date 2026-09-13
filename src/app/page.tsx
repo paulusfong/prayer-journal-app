@@ -1,24 +1,26 @@
 import Link from "next/link";
 import { Shell } from "@/components/shell";
-import { categoryLabel, listRequests } from "@/lib/journal";
 import { displayLabel } from "@/lib/ids";
+import { getRequestDictionary, localizedCategoryLabel } from "@/lib/i18n";
+import { listRequests } from "@/lib/journal";
 import { requestLoggedDate } from "@/lib/request-fields";
 import { requireApproved } from "@/lib/session";
 
 export default async function HomePage() {
   const { user, membership } = await requireApproved();
+  const { locale, dict } = await getRequestDictionary();
   const rows = await listRequests(user.id, membership.circleId, "open");
 
   return (
-    <Shell user={user} isOwner={membership.role === "owner"} approved>
+    <Shell user={user} isOwner={membership.role === "owner"} approved dict={dict} locale={locale}>
       <div className="list-head">
-        <h1>Open requests</h1>
-        <Link href="/requests/new" className="btn" title="Click to log a new prayer request">
-          Log a request
+        <h1>{dict.home.title}</h1>
+        <Link href="/requests/new" className="btn" title={dict.home.logRequestTitle}>
+          {dict.home.logRequest}
         </Link>
       </div>
       {rows.length === 0 ? (
-        <p className="empty">No open requests — add one.</p>
+        <p className="empty">{dict.home.empty}</p>
       ) : (
         <ul className="request-list">
           {rows.map(({ request, author }) => (
@@ -26,17 +28,17 @@ export default async function HomePage() {
               <Link href={`/requests/${request.id}`}>
                 <h2>{request.title}</h2>
                 <p className="meta">
-                  {request.visibility === "private" ? "Private · " : null}
+                  {request.visibility === "private" ? `${dict.home.private} · ` : null}
                   {displayLabel(author)}
-                  {categoryLabel(request.category, request.categoryOther)
-                    ? ` · ${categoryLabel(request.category, request.categoryOther)}`
+                  {localizedCategoryLabel(dict, request.category, request.categoryOther)
+                    ? ` · ${localizedCategoryLabel(dict, request.category, request.categoryOther)}`
                     : null}
                   {` · ${requestLoggedDate(request.createdAt)}`}
                 </p>
               </Link>
               {request.authorId === user.id ? (
                 <p className="card-actions">
-                  <Link href={`/requests/${request.id}/edit`}>Edit</Link>
+                  <Link href={`/requests/${request.id}/edit`}>{dict.home.edit}</Link>
                 </p>
               ) : null}
             </li>
