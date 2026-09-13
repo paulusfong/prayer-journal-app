@@ -1,9 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { setLocale, signOut } from "@/app/actions";
+import { signOut } from "@/app/actions";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { displayLabel } from "@/lib/ids";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
-import { LOCALES, type Locale } from "@/lib/i18n/locales";
+import type { Locale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n";
 
 type Props = React.PropsWithChildren<{
@@ -58,21 +59,7 @@ export function Shell({
               </form>
             </nav>
           ) : null}
-          <form action={setLocale} className="lang-switch">
-            <label>
-              <span className="sr-only">{dict.nav.language}</span>
-              <select name="locale" defaultValue={locale} aria-label={dict.nav.language}>
-                {LOCALES.map((code) => (
-                  <option key={code} value={code}>
-                    {dict.localeNames[code]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button type="submit" className="text-btn">
-              {dict.nav.language}
-            </button>
-          </form>
+          <LocaleSwitcher locale={locale} label={dict.nav.language} names={dict.localeNames} />
         </div>
       </header>
       <main>{children}</main>
