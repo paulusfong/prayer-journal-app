@@ -71,9 +71,16 @@ export function stepsForPlan(plan, { unitOnly = false } = {}) {
 
 function runStep(step) {
   console.log(`\n→ ${step.label}: ${step.cmd} ${step.args.join(" ")}`);
+  // Drop leftover STRYKER_* from the parent shell so a prior scoped run
+  // cannot poison a full `stryker run` (or the next scoped one).
+  const env = { ...process.env, ...(step.env ?? {}) };
+  if (!step.env?.STRYKER_MUTATE) {
+    delete env.STRYKER_MUTATE;
+    delete env.STRYKER_TEST_COMMAND;
+  }
   const result = spawnSync(step.cmd, step.args, {
     stdio: "inherit",
-    env: step.env ? { ...process.env, ...step.env } : process.env,
+    env,
   });
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
