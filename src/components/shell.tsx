@@ -48,6 +48,7 @@ export function Shell({
                     {dict.nav.newRequest}
                   </Link>
                   <Link href="/feedback">{dict.nav.feedback}</Link>
+                  <Link href="/help">{dict.nav.help}</Link>
                   {isOwner ? <Link href="/circle">{dict.nav.circle}</Link> : null}
                 </>
               ) : null}
@@ -64,6 +65,7 @@ export function Shell({
       </header>
       <main>{children}</main>
       <footer className="colophon">
+        <Link href="/help">{dict.nav.help}</Link>
         <Link href="/privacy">{dict.nav.privacy}</Link>
       </footer>
     </div>
