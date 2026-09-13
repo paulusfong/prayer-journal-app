@@ -6,6 +6,7 @@ export type Dictionary = {
     answered: string;
     newRequest: string;
     feedback: string;
+    help: string;
     circle: string;
     signOut: string;
     privacy: string;
@@ -119,6 +120,26 @@ export type Dictionary = {
     received: string;
     empty: string;
   };
+  help: {
+    title: string;
+    intro: string;
+    joinTitle: string;
+    joinBody: string;
+    signInTitle: string;
+    signInBody: string;
+    requestsTitle: string;
+    requestsBody: string;
+    prayTitle: string;
+    prayBody: string;
+    answeredTitle: string;
+    answeredBody: string;
+    circleTitle: string;
+    circleBody: string;
+    languageTitle: string;
+    languageBody: string;
+    feedbackTitle: string;
+    feedbackBody: string;
+  };
   privacy: {
     title: string;
     p1: string;
@@ -146,6 +167,7 @@ export const en: Dictionary = {
     answered: "Answered",
     newRequest: "New request",
     feedback: "Feedback",
+    help: "Help",
     circle: "Circle",
     signOut: "Sign out",
     privacy: "Privacy",
@@ -260,6 +282,26 @@ export const en: Dictionary = {
     submit: "Send",
     received: "Received",
     empty: "Nothing yet.",
+  },
+  help: {
+    title: "How to use Prayer Journal",
+    intro: "This journal is for one small circle. Here is the short path from invite to praying together.",
+    joinTitle: "Join the circle",
+    joinBody: "You need an invite link from the circle owner. Open the link, request a magic sign-in email, then wait for the owner to approve you. Until then you will see a waiting screen.",
+    signInTitle: "Sign in",
+    signInBody: "There is no password. Enter your email, open the link we send, and confirm Sign in on that page (so email scanners do not use the link for you).",
+    requestsTitle: "Log a prayer request",
+    requestsBody: "Use New request. Add a title and optional details, pick a category if you want, and choose Whole circle or Only me. The date is the day you log it. You can edit your own requests later from Open or the request page.",
+    prayTitle: "Pray, notes, and updates",
+    prayBody: "Open a request to mark I prayed, leave a short note, or (if you are the author) add an update. Anyone in the circle who can see the request may mark it answered; the author can reopen it.",
+    answeredTitle: "Answered list",
+    answeredBody: "Answered moves finished requests out of Open so the circle can keep praying for what is still current. Open an answered item anytime to read it or reopen.",
+    circleTitle: "Invites (owners)",
+    circleBody: "Owners use Circle to reset the invite link (copy it when it appears — the raw token is shown once), approve or decline people waiting, and remove members if needed.",
+    languageTitle: "Language",
+    languageBody: "Use the language menu in the header. The labels switch as soon as you pick English, 简体中文, 繁體中文, or Español. Your prayer text stays exactly as you wrote it.",
+    feedbackTitle: "Feedback",
+    feedbackBody: "Use Feedback to send a comment or feature idea about the app (not a prayer). The circle owner can read what was sent.",
   },
   privacy: {
     title: "Privacy",
