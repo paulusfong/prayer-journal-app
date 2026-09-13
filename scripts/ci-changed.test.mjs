@@ -57,6 +57,10 @@ describe("stryker mutate allowlist", () => {
     assert.equal(isMutateTarget("src/lib/schema.ts"), false);
     assert.equal(isMutateTarget("src/lib/auth.ts"), false);
     assert.equal(isMutateTarget("src/lib/db.ts"), false);
+    assert.equal(isMutateTarget("src/lib/i18n/locales.ts"), true);
+    assert.equal(isMutateTarget("src/lib/i18n/index.ts"), false);
+    assert.equal(isMutateTarget("src/lib/i18n/dictionaries/en.ts"), false);
+    assert.equal(isMutateTarget("src/lib/i18n/dictionaries/zh-Hans.ts"), false);
   });
 
   it("scopes PR #18-style UI+lib diffs to lib mutate targets and lib tests", () => {

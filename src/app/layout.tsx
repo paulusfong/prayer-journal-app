@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Source_Sans_3, Source_Serif_4 } from "next/font/google";
+import { getRequestLocale } from "@/lib/i18n/request-locale";
 import "./globals.css";
 
 const sans = Source_Sans_3({
@@ -20,9 +21,10 @@ export const metadata: Metadata = {
   description: "A small-circle prayer journal",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getRequestLocale();
   return (
-    <html lang="en" className={`${sans.variable} ${serif.variable} h-full`}>
+    <html lang={locale} className={`${sans.variable} ${serif.variable} h-full`}>
       <body className="min-h-full">{children}</body>
     </html>
   );

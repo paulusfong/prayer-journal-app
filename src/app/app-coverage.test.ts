@@ -237,18 +237,35 @@ describe("app coverage", async () => {
       React.createElement(Shell, { user: fakeUser, approved: false }, "c"),
     );
     assert.match(html3, /Sign out/);
+    assert.match(html1, /name="locale"/);
+    assert.match(html1, /简体中文/);
+    assert.match(html1, /繁體中文/);
+    assert.match(html1, /Español/);
+    const { getDictionary } = await import("@/lib/i18n/get-dictionary");
+    const zh = await renderElement(
+      React.createElement(Shell, { dict: getDictionary("zh-Hans"), locale: "zh-Hans", user: fakeUser, approved: true, isOwner: true }, "c"),
+    );
+    assert.match(zh, /已应允/);
+    assert.match(zh, /祷告日志/);
+    assert.doesNotMatch(zh, />Answered</);
   });
 
   it("renders layout and static pages", async () => {
     const layout = await import("@/app/layout");
     const title = layout.metadata.title as { default: string };
     assert.equal(title.default, "Prayer Journal");
-    const layoutEl = layout.default({ children: React.createElement("div", null, "x") });
+    const layoutEl = await layout.default({ children: React.createElement("div", null, "x") });
     assert.equal(layoutEl.type, "html");
+    assert.equal(layoutEl.props.lang, "en");
     await renderElement(layoutEl);
 
+    setCookie("pj_locale", "es");
+    const layoutEs = await layout.default({ children: React.createElement("div", null, "x") });
+    assert.equal(layoutEs.props.lang, "es");
+    resetHarness();
+
     const expired = await import("@/app/join/expired/page");
-    await renderElement(React.createElement(expired.default));
+    await renderElement(await expired.default());
 
     sessionUser = null;
     const privacy = await import("@/app/privacy/page");
@@ -262,6 +279,11 @@ describe("app coverage", async () => {
 
     const home = await import("@/app/page");
     await renderElement(await home.default());
+    setCookie("pj_locale", "es");
+    const homeEs = await renderElement(await home.default());
+    assert.match(homeEs, /Peticiones abiertas/);
+    assert.match(homeEs, /Registrar petición/);
+    resetHarness();
 
     // empty answered
     const answered = await import("@/app/answered/page");
@@ -294,6 +316,10 @@ describe("app coverage", async () => {
       visibility: "private",
       category: "other",
       categoryOther: "X",
+    });
+    await journal.createRequest(memberId, fakeMembership.circleId, {
+      title: "FromMem",
+      visibility: "circle",
     });
     await renderElement(await home.default());
 
@@ -388,6 +414,58 @@ describe("app coverage", async () => {
 
     await assert.rejects(() => actions.rotateInvite(), NextRedirect);
     assert.ok(getCookiesSnapshot().invite_link_once || true);
+
+    resetHarness();
+    const localeFd = (data: Record<string, string>) => {
+      const f = new FormData();
+      for (const [k, v] of Object.entries(data)) f.set(k, v);
+      return f;
+    };
+    await assert.rejects(
+      () => actions.setLocale(localeFd({ locale: "zh-Hans", next: "/profile" })),
+      (e) => {
+        assert.ok(e instanceof NextRedirect);
+        assert.equal(e.url, "/profile");
+        return true;
+      },
+    );
+    assert.equal(getCookiesSnapshot().pj_locale, "zh-Hans");
+    assert.ok(getRevalidated().includes("/"));
+
+    resetHarness();
+    await assert.rejects(
+      () => actions.setLocale(localeFd({ locale: "fr", next: "//evil.example" })),
+      (e) => {
+        assert.ok(e instanceof NextRedirect);
+        assert.equal(e.url, "/");
+        return true;
+      },
+    );
+    assert.equal(getCookiesSnapshot().pj_locale, undefined);
+
+    resetHarness();
+    setHeaders({ referer: "http://localhost:3000/answered" });
+    await assert.rejects(
+      () => actions.setLocale(localeFd({ locale: "es" })),
+      (e) => {
+        assert.ok(e instanceof NextRedirect);
+        assert.equal(e.url, "/answered");
+        return true;
+      },
+    );
+    assert.equal(getCookiesSnapshot().pj_locale, "es");
+
+    resetHarness();
+    (process.env as { NODE_ENV?: string }).NODE_ENV = "production";
+    await assert.rejects(() => actions.setLocale(localeFd({ locale: "zh-Hant", next: "/circle" })), NextRedirect);
+    assert.equal(getCookiesSnapshot().pj_locale, "zh-Hant");
+    (process.env as { NODE_ENV?: string }).NODE_ENV = "test";
+
+    resetHarness();
+    process.env.BETTER_AUTH_URL = "https://example.com";
+    await assert.rejects(() => actions.setLocale(localeFd({ locale: "en", next: "   " })), NextRedirect);
+    assert.equal(getCookiesSnapshot().pj_locale, "en");
+    process.env.BETTER_AUTH_URL = "http://localhost:3000";
 
     const people = await journal.listCirclePeople(fakeMembership.circleId);
     const memberMem = people.find((p) => p.person.id === memberId)!;

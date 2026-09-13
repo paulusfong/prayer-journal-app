@@ -24,6 +24,7 @@ export const STRYKER_EXCLUDED = new Set([
   "src/lib/auth.ts",
   "src/lib/schema.ts",
   "src/lib/db.ts",
+  "src/lib/i18n/index.ts",
 ]);
 
 export function isSource(f) {
@@ -44,7 +45,8 @@ export function isMutateTarget(f) {
     f.startsWith("src/lib/") &&
     f.endsWith(".ts") &&
     !f.includes(".test.") &&
-    !STRYKER_EXCLUDED.has(f)
+    !STRYKER_EXCLUDED.has(f) &&
+    !f.startsWith("src/lib/i18n/dictionaries/")
   );
 }
 

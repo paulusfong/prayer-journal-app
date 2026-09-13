@@ -1,11 +1,13 @@
 import { Shell } from "@/components/shell";
+import { getRequestDictionary } from "@/lib/i18n";
 
-export default function ExpiredInvitePage() {
+export default async function ExpiredInvitePage() {
+  const { locale, dict } = await getRequestDictionary();
   return (
-    <Shell>
+    <Shell dict={dict} locale={locale}>
       <section className="panel">
-        <h1>This invite is no longer valid</h1>
-        <p className="lede">Ask the owner for a new link.</p>
+        <h1>{dict.expired.title}</h1>
+        <p className="lede">{dict.expired.lede}</p>
       </section>
     </Shell>
   );

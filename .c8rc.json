@@ -8,7 +8,8 @@
     "**/node_modules/**",
     "**/.next/**",
     "**/*.test.ts",
-    "**/test/**"
+    "**/test/**",
+    "src/lib/i18n/dictionaries/**"
   ],
   "reporter": [
     "text",
