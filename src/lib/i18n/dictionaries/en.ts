@@ -5,6 +5,7 @@ export type Dictionary = {
     open: string;
     answered: string;
     newRequest: string;
+    feedback: string;
     circle: string;
     signOut: string;
     privacy: string;
@@ -104,6 +105,20 @@ export type Dictionary = {
     displayName: string;
     save: string;
   };
+  feedback: {
+    title: string;
+    lede: string;
+    thanks: string;
+    kindLegend: string;
+    kindComment: string;
+    kindFeature: string;
+    kindCommentShort: string;
+    kindFeatureShort: string;
+    bodyLabel: string;
+    submit: string;
+    received: string;
+    empty: string;
+  };
   privacy: {
     title: string;
     p1: string;
@@ -130,6 +145,7 @@ export const en: Dictionary = {
     open: "Open",
     answered: "Answered",
     newRequest: "New request",
+    feedback: "Feedback",
     circle: "Circle",
     signOut: "Sign out",
     privacy: "Privacy",
@@ -231,9 +247,23 @@ export const en: Dictionary = {
     displayName: "Display name",
     save: "Save",
   },
+  feedback: {
+    title: "About this app",
+    lede: "A feature idea or a short comment. The circle owner can read it.",
+    thanks: "Thanks — it was saved.",
+    kindLegend: "What is this",
+    kindComment: "Comment",
+    kindFeature: "Feature request",
+    kindCommentShort: "Comment",
+    kindFeatureShort: "Feature",
+    bodyLabel: "Your note",
+    submit: "Send",
+    received: "Received",
+    empty: "Nothing yet.",
+  },
   privacy: {
     title: "Privacy",
-    p1: "Prayer Journal stores your email address, the name you choose, and the prayer requests, updates, and notes you write.",
+    p1: "Prayer Journal stores your email address, the name you choose, the prayer requests, updates, and notes you write, and any app comments or feature ideas you send.",
     p2: "We do not sell this. We do not use analytics that phone home. Mail we send uses the request title and a link — not the prayer body.",
     p3: "Ask the circle owner, or whoever runs this instance, to delete your account if you want out.",
   },

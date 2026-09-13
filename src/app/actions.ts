@@ -36,6 +36,7 @@ import {
   clientIpFromHeaders,
   magicLinkThrottleKey,
 } from "@/lib/magic-link-throttle";
+import { addAppFeedback } from "@/lib/feedback";
 import { requestLoggedDate } from "@/lib/request-fields";
 import { requireApproved, requireUser } from "@/lib/session";
 
@@ -189,6 +190,18 @@ export async function decideMembership(membershipId: string, action: "approve" |
   const { user } = await requireApproved();
   await setMembershipStatus(user.id, membershipId, action);
   revalidatePath("/circle");
+}
+
+export async function submitAppFeedback(formData: FormData) {
+  const { user } = await requireApproved();
+  const ok = await addAppFeedback(
+    user.id,
+    String(formData.get("kind") ?? ""),
+    String(formData.get("body") ?? ""),
+  );
+  if (!ok) redirect("/feedback");
+  revalidatePath("/feedback");
+  redirect("/feedback?sent=1");
 }
 
 function formFrom(formData: FormData) {

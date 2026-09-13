@@ -46,6 +46,7 @@ export function Shell({
                   <Link className="nav-cta" href="/requests/new">
                     {dict.nav.newRequest}
                   </Link>
+                  <Link href="/feedback">{dict.nav.feedback}</Link>
                   {isOwner ? <Link href="/circle">{dict.nav.circle}</Link> : null}
                 </>
               ) : null}
