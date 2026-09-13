@@ -3,6 +3,7 @@ import { INVITE_LINK_ONCE_COOKIE } from "@/lib/invite-flash";
 import { decideMembership, rotateInvite } from "@/app/actions";
 import { Shell } from "@/components/shell";
 import { displayLabel } from "@/lib/ids";
+import { getRequestDictionary, t } from "@/lib/i18n";
 import { activeInvite, listCirclePeople } from "@/lib/journal";
 import { requireApproved } from "@/lib/session";
 import { notFound } from "next/navigation";
@@ -10,6 +11,7 @@ import { notFound } from "next/navigation";
 export default async function CirclePage() {
   const { user, membership } = await requireApproved();
   if (membership.role !== "owner") notFound();
+  const { locale, dict } = await getRequestDictionary();
 
   const people = await listCirclePeople(membership.circleId);
   const invite = await activeInvite(membership.circleId);
@@ -19,10 +21,10 @@ export default async function CirclePage() {
   const onceToken = (await cookies()).get(INVITE_LINK_ONCE_COOKIE)?.value;
 
   return (
-    <Shell user={user} isOwner approved>
+    <Shell user={user} isOwner approved dict={dict} locale={locale}>
       <section className="panel">
-        <h1>Circle</h1>
-        <h2>Invite</h2>
+        <h1>{dict.circle.title}</h1>
+        <h2>{dict.circle.invite}</h2>
         {onceToken ? (
           <>
             <p className="invite-url">
@@ -30,26 +32,22 @@ export default async function CirclePage() {
                 {base}/join/{onceToken}
               </code>
             </p>
-            <p className="muted">
-              Copy this link now — the raw token is shown only right after you reset it, not stored in
-              the database.
-            </p>
+            <p className="muted">{dict.circle.copyOnce}</p>
           </>
         ) : invite ? (
           <p className="muted">
-            An invite link is active until {invite.expiresAt.toISOString().slice(0, 10)}. Reset the link
-            to reveal a new join URL (shown once). Anyone with the link still needs your approval.
+            {t(dict, "circle.activeUntil", { date: invite.expiresAt.toISOString().slice(0, 10) })}
           </p>
         ) : (
-          <p className="muted">No active invite link.</p>
+          <p className="muted">{dict.circle.noInvite}</p>
         )}
         <form action={rotateInvite}>
-          <button type="submit">Reset invite link</button>
+          <button type="submit">{dict.circle.resetInvite}</button>
         </form>
 
-        <h2>Waiting {pending.length ? `(${pending.length})` : ""}</h2>
+        <h2>{pending.length ? t(dict, "circle.waitingCount", { count: pending.length }) : dict.circle.waiting}</h2>
         {pending.length === 0 ? (
-          <p className="muted">No one waiting.</p>
+          <p className="muted">{dict.circle.noWaiting}</p>
         ) : (
           <ul className="people">
             {pending.map(({ membership: m, person }) => (
@@ -60,12 +58,12 @@ export default async function CirclePage() {
                 <span>
                   <form action={decideMembership.bind(null, m.id, "approve")} style={{ display: "inline" }}>
                     <button className="btn-small" type="submit">
-                      Approve
+                      {dict.circle.approve}
                     </button>
                   </form>{" "}
                   <form action={decideMembership.bind(null, m.id, "decline")} style={{ display: "inline" }}>
                     <button className="danger" type="submit">
-                      Decline
+                      {dict.circle.decline}
                     </button>
                   </form>
                 </span>
@@ -74,18 +72,18 @@ export default async function CirclePage() {
           </ul>
         )}
 
-        <h2>Members</h2>
+        <h2>{dict.circle.members}</h2>
         <ul className="people">
           {members.map(({ membership: m, person }) => (
             <li key={m.id}>
               <span>
                 {displayLabel(person)}
-                {m.role === "owner" ? " · owner" : ""}
+                {m.role === "owner" ? ` · ${dict.circle.ownerRole}` : ""}
               </span>
               {m.userId !== user.id ? (
                 <form action={decideMembership.bind(null, m.id, "revoke")}>
                   <button className="danger" type="submit">
-                    Remove
+                    {dict.circle.remove}
                   </button>
                 </form>
               ) : null}

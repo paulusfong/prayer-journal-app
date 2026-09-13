@@ -1,54 +1,56 @@
 import { notFound } from "next/navigation";
 import { updatePrayerRequest } from "@/app/actions";
 import { Shell } from "@/components/shell";
-import { CATEGORIES } from "@/lib/schema";
+import { getRequestDictionary } from "@/lib/i18n";
 import { getVisibleRequest } from "@/lib/journal";
+import { CATEGORIES } from "@/lib/schema";
 import { requireApproved } from "@/lib/session";
 
 export default async function EditRequestPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { user, membership } = await requireApproved();
+  const { locale, dict } = await getRequestDictionary();
   const found = await getVisibleRequest(user.id, membership.circleId, id);
   if (!found || found.request.authorId !== user.id) notFound();
   const r = found.request;
 
   return (
-    <Shell user={user} isOwner={membership.role === "owner"} approved>
+    <Shell user={user} isOwner={membership.role === "owner"} approved dict={dict} locale={locale}>
       <section className="panel">
-        <h1>Edit request</h1>
+        <h1>{dict.requestForm.editTitle}</h1>
         <form action={updatePrayerRequest.bind(null, r.id)}>
-          <label htmlFor="title">Title</label>
+          <label htmlFor="title">{dict.requestForm.title}</label>
           <input id="title" name="title" required maxLength={120} defaultValue={r.title} />
 
-          <label htmlFor="body">The ask (optional)</label>
+          <label htmlFor="body">{dict.requestForm.body}</label>
           <textarea id="body" name="body" rows={5} maxLength={2000} defaultValue={r.body ?? ""} />
 
-          <label htmlFor="category">Category (optional)</label>
+          <label htmlFor="category">{dict.requestForm.category}</label>
           <select id="category" name="category" defaultValue={r.category ?? ""}>
-            <option value="">None</option>
-            {Object.entries(CATEGORIES).map(([k, v]) => (
+            <option value="">{dict.requestForm.categoryNone}</option>
+            {Object.keys(CATEGORIES).map((k) => (
               <option key={k} value={k}>
-                {v}
+                {dict.categories[k as keyof typeof dict.categories]}
               </option>
             ))}
           </select>
 
-          <label htmlFor="categoryOther">If other, say what</label>
+          <label htmlFor="categoryOther">{dict.requestForm.categoryOther}</label>
           <input id="categoryOther" name="categoryOther" maxLength={80} defaultValue={r.categoryOther ?? ""} />
 
           <fieldset>
-            <legend>Who can see this</legend>
+            <legend>{dict.requestForm.visibilityLegend}</legend>
             <label className="choice">
-              <input type="radio" name="visibility" value="circle" defaultChecked={r.visibility === "circle"} /> Whole
-              circle
+              <input type="radio" name="visibility" value="circle" defaultChecked={r.visibility === "circle"} />{" "}
+              {dict.requestForm.visibilityCircle}
             </label>
             <label className="choice">
-              <input type="radio" name="visibility" value="private" defaultChecked={r.visibility === "private"} /> Only
-              me
+              <input type="radio" name="visibility" value="private" defaultChecked={r.visibility === "private"} />{" "}
+              {dict.requestForm.visibilityPrivate}
             </label>
           </fieldset>
 
-          <button type="submit">Save</button>
+          <button type="submit">{dict.requestForm.submitEdit}</button>
         </form>
       </section>
     </Shell>

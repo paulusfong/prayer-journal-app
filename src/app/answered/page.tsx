@@ -1,18 +1,20 @@
 import Link from "next/link";
 import { Shell } from "@/components/shell";
-import { categoryLabel, listRequests } from "@/lib/journal";
 import { displayLabel } from "@/lib/ids";
+import { getRequestDictionary, localizedCategoryLabel, t } from "@/lib/i18n";
+import { listRequests } from "@/lib/journal";
 import { requireApproved } from "@/lib/session";
 
 export default async function AnsweredPage() {
   const { user, membership } = await requireApproved();
+  const { locale, dict } = await getRequestDictionary();
   const rows = await listRequests(user.id, membership.circleId, "answered");
 
   return (
-    <Shell user={user} isOwner={membership.role === "owner"} approved>
-      <h1>Answered</h1>
+    <Shell user={user} isOwner={membership.role === "owner"} approved dict={dict} locale={locale}>
+      <h1>{dict.answered.title}</h1>
       {rows.length === 0 ? (
-        <p className="empty">Nothing marked answered yet.</p>
+        <p className="empty">{dict.answered.empty}</p>
       ) : (
         <ul className="request-list">
           {rows.map(({ request, author }) => (
@@ -22,10 +24,10 @@ export default async function AnsweredPage() {
                 <p className="meta">
                   {displayLabel(author)}
                   {request.answeredAt
-                    ? ` · answered ${request.answeredAt.toISOString().slice(0, 10)}`
+                    ? ` · ${t(dict, "answered.answeredOn", { date: request.answeredAt.toISOString().slice(0, 10) })}`
                     : null}
-                  {categoryLabel(request.category, request.categoryOther)
-                    ? ` · ${categoryLabel(request.category, request.categoryOther)}`
+                  {localizedCategoryLabel(dict, request.category, request.categoryOther)
+                    ? ` · ${localizedCategoryLabel(dict, request.category, request.categoryOther)}`
                     : null}
                 </p>
               </Link>
