@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { localeSelectChangeHandler, submitLocaleForm } from "./submit-locale-form";
+import { handleLocaleSelectChange, submitLocaleForm } from "./submit-locale-form";
 
 describe("submitLocaleForm", () => {
   it("no-ops for null and calls requestSubmit when present", () => {
@@ -12,13 +12,12 @@ describe("submitLocaleForm", () => {
   });
 });
 
-describe("localeSelectChangeHandler", () => {
-  it("submits the current form when fired", () => {
+describe("handleLocaleSelectChange", () => {
+  it("submits the select's form", () => {
     let called = 0;
     const form = { requestSubmit: () => { called += 1; } } as HTMLFormElement;
-    const handler = localeSelectChangeHandler({ current: form });
-    handler();
+    handleLocaleSelectChange({ currentTarget: { form } });
     assert.equal(called, 1);
-    localeSelectChangeHandler({ current: null })();
+    handleLocaleSelectChange({ currentTarget: { form: null } });
   });
 });

@@ -3,7 +3,7 @@ export function submitLocaleForm(form: HTMLFormElement | null) {
   form?.requestSubmit();
 }
 
-/** Stable onChange factory so the handler is unit-testable under c8. */
-export function localeSelectChangeHandler(formRef: { current: HTMLFormElement | null }) {
-  return () => submitLocaleForm(formRef.current);
+/** Select onChange handler — module-level so c8 can cover it without firing React events. */
+export function handleLocaleSelectChange(ev: { currentTarget: { form: HTMLFormElement | null } }) {
+  submitLocaleForm(ev.currentTarget.form);
 }
