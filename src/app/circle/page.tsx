@@ -8,7 +8,9 @@ import { activeInvite, listCirclePeople } from "@/lib/journal";
 import { requireApproved } from "@/lib/session";
 import { notFound } from "next/navigation";
 
-export default async function CirclePage() {
+export default async function CirclePage(props?: {
+  searchParams?: Promise<{ invite?: string }>;
+}) {
   const { user, membership } = await requireApproved();
   if (membership.role !== "owner") notFound();
   const { locale, dict } = await getRequestDictionary();
@@ -18,7 +20,10 @@ export default async function CirclePage() {
   const pending = people.filter((p) => p.membership.status === "pending");
   const members = people.filter((p) => p.membership.status === "approved");
   const base = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
-  const onceToken = (await cookies()).get(INVITE_LINK_ONCE_COOKIE)?.value;
+  const sp = (await props?.searchParams) ?? {};
+  const onceToken =
+    (typeof sp.invite === "string" && sp.invite.trim()) ||
+    (await cookies()).get(INVITE_LINK_ONCE_COOKIE)?.value;
 
   return (
     <Shell user={user} isOwner approved dict={dict} locale={locale}>
