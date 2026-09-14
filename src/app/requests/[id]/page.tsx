@@ -39,7 +39,11 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
     <Shell user={user} isOwner={membership.role === "owner"} approved dict={dict} locale={locale}>
       <article>
         <p className="eyebrow">
-          {request.visibility === "private" ? `${dict.request.private} · ` : null}
+          {request.visibility === "private"
+            ? `${dict.request.private} · `
+            : request.visibility === "people"
+              ? `${dict.request.shared} · `
+              : null}
           {request.status === "answered" ? `${dict.request.answered} · ` : null}
           {displayLabel(author)}
           {category ? ` · ${category}` : null}

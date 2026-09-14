@@ -32,6 +32,7 @@ export type Dictionary = {
     logRequestTitle: string;
     empty: string;
     private: string;
+    shared: string;
     edit: string;
   };
   answered: {
@@ -49,12 +50,14 @@ export type Dictionary = {
     categoryOther: string;
     visibilityLegend: string;
     visibilityCircle: string;
+    visibilityPeople: string;
     visibilityPrivate: string;
     submitNew: string;
     submitEdit: string;
   };
   request: {
     private: string;
+    shared: string;
     answered: string;
     personPrayed: string;
     peoplePrayed: string;
@@ -193,6 +196,7 @@ export const en: Dictionary = {
     logRequestTitle: "Click to log a new prayer request",
     empty: "No open requests — add one.",
     private: "Private",
+    shared: "Shared",
     edit: "Edit",
   },
   answered: {
@@ -210,12 +214,14 @@ export const en: Dictionary = {
     categoryOther: "If other, say what",
     visibilityLegend: "Who can see this",
     visibilityCircle: "Whole circle",
+    visibilityPeople: "Pick people",
     visibilityPrivate: "Only me",
     submitNew: "Log request",
     submitEdit: "Save",
   },
   request: {
     private: "Private",
+    shared: "Shared",
     answered: "Answered",
     personPrayed: "{count} person prayed",
     peoplePrayed: "{count} people prayed",
@@ -291,7 +297,7 @@ export const en: Dictionary = {
     signInTitle: "Sign in",
     signInBody: "There is no password. Enter your email, open the link we send, and confirm Sign in on that page (so email scanners do not use the link for you).",
     requestsTitle: "Log a prayer request",
-    requestsBody: "Use New request. Add a title and optional details, pick a category if you want, and choose Whole circle or Only me. The date is the day you log it. You can edit your own requests later from Open or the request page.",
+    requestsBody: "Use New request. Add a title and optional details, pick a category if you want, and choose Whole circle, Pick people, or Only me. The date is the day you log it. You can edit your own requests later from Open or the request page.",
     prayTitle: "Pray, notes, and updates",
     prayBody: "Open a request to mark I prayed, leave a short note, or (if you are the author) add an update. Anyone in the circle who can see the request may mark it answered; the author can reopen it.",
     answeredTitle: "Answered list",
