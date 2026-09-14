@@ -12,7 +12,8 @@
     "test:mutation": "stryker run",
     "check:pr": "node scripts/check-pr.mjs --pr",
     "prepare": "git config core.hooksPath .githooks || true",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "open-pr": "node scripts/open-pr.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",
