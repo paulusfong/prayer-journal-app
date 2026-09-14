@@ -23,7 +23,6 @@ import {
   unmarkPrayed,
   updateRequest,
 } from "@/lib/journal";
-import { INVITE_LINK_ONCE_COOKIE } from "@/lib/invite-flash";
 import {
   LOCALE_COOKIE,
   localeCookieInit,
