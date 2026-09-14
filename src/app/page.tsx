@@ -28,7 +28,11 @@ export default async function HomePage() {
               <Link href={`/requests/${request.id}`}>
                 <h2>{request.title}</h2>
                 <p className="meta">
-                  {request.visibility === "private" ? `${dict.home.private} · ` : null}
+                  {request.visibility === "private"
+                    ? `${dict.home.private} · `
+                    : request.visibility === "people"
+                      ? `${dict.home.shared} · `
+                      : null}
                   {displayLabel(author)}
                   {localizedCategoryLabel(dict, request.category, request.categoryOther)
                     ? ` · ${localizedCategoryLabel(dict, request.category, request.categoryOther)}`

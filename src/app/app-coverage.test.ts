@@ -334,17 +334,25 @@ describe("app coverage", async () => {
     await journal.reopenRequest(fakeUser.id, requestId);
 
     // private + category other meta branches on home
-    await journal.createRequest(fakeUser.id, fakeMembership.circleId, {
+    const priv = await journal.createRequest(fakeUser.id, fakeMembership.circleId, {
       title: "Priv",
       visibility: "private",
       category: "other",
       categoryOther: "X",
+    });
+    const shared = await journal.createRequest(fakeUser.id, fakeMembership.circleId, {
+      title: "Named",
+      visibility: "people",
+      shareWith: [memberId],
     });
     await journal.createRequest(memberId, fakeMembership.circleId, {
       title: "FromMem",
       visibility: "circle",
     });
     await renderElement(await home.default());
+    await renderElement(await edit.default({ params: Promise.resolve({ id: priv.id }) }));
+    await renderElement(await edit.default({ params: Promise.resolve({ id: shared.id }) }));
+    await renderElement(await detail.default({ params: Promise.resolve({ id: shared.id }) }));
 
     const circle = await import("@/app/circle/page");
     setCookie("invite_link_once", "raw-token");
@@ -421,6 +429,15 @@ describe("app coverage", async () => {
 
     await assert.rejects(
       () => actions.createPrayerRequest(fd({ title: "From action", visibility: "circle" })),
+      (e: unknown) => e instanceof NextRedirect,
+    );
+    const peopleFd = new FormData();
+    peopleFd.set("title", "Named action");
+    peopleFd.set("visibility", "people");
+    peopleFd.append("shareWith", memberId);
+    await assert.rejects(() => actions.createPrayerRequest(peopleFd), (e: unknown) => e instanceof NextRedirect);
+    await assert.rejects(
+      () => actions.createPrayerRequest(fd({ title: "Only me action", visibility: "private" })),
       (e: unknown) => e instanceof NextRedirect,
     );
     await assert.rejects(() => actions.updatePrayerRequest(requestId, fd({ title: "Upd", visibility: "circle" })), NextRedirect);

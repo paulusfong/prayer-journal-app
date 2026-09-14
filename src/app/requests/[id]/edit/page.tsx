@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { updatePrayerRequest } from "@/app/actions";
 import { Shell } from "@/components/shell";
+import { VisibilityFields } from "@/components/visibility-fields";
+import { displayLabel } from "@/lib/ids";
 import { getRequestDictionary } from "@/lib/i18n";
-import { getVisibleRequest } from "@/lib/journal";
+import { getVisibleRequest, listCirclePeople, listRequestGrantUserIds } from "@/lib/journal";
 import { CATEGORIES } from "@/lib/schema";
 import { requireApproved } from "@/lib/session";
 
@@ -13,6 +15,10 @@ export default async function EditRequestPage({ params }: { params: Promise<{ id
   const found = await getVisibleRequest(user.id, membership.circleId, id);
   if (!found || found.request.authorId !== user.id) notFound();
   const r = found.request;
+  const people = (await listCirclePeople(membership.circleId))
+    .filter((p) => p.membership.status === "approved" && p.person.id !== user.id)
+    .map((p) => ({ id: p.person.id, label: displayLabel(p.person) }));
+  const grantedUserIds = await listRequestGrantUserIds(r.id);
 
   return (
     <Shell user={user} isOwner={membership.role === "owner"} approved dict={dict} locale={locale}>
@@ -38,17 +44,7 @@ export default async function EditRequestPage({ params }: { params: Promise<{ id
           <label htmlFor="categoryOther">{dict.requestForm.categoryOther}</label>
           <input id="categoryOther" name="categoryOther" maxLength={80} defaultValue={r.categoryOther ?? ""} />
 
-          <fieldset>
-            <legend>{dict.requestForm.visibilityLegend}</legend>
-            <label className="choice">
-              <input type="radio" name="visibility" value="circle" defaultChecked={r.visibility === "circle"} />{" "}
-              {dict.requestForm.visibilityCircle}
-            </label>
-            <label className="choice">
-              <input type="radio" name="visibility" value="private" defaultChecked={r.visibility === "private"} />{" "}
-              {dict.requestForm.visibilityPrivate}
-            </label>
-          </fieldset>
+          <VisibilityFields dict={dict} people={people} defaultVisibility={r.visibility} grantedUserIds={grantedUserIds} />
 
           <button type="submit">{dict.requestForm.submitEdit}</button>
         </form>

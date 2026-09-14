@@ -269,7 +269,8 @@ textarea:focus {
   box-shadow: 0 0 0 3px oklch(90% 0.04 145 / 0.7);
 }
 
-input[type="radio"] {
+input[type="radio"],
+input[type="checkbox"] {
   width: auto;
   accent-color: var(--accent);
 }
@@ -285,6 +286,10 @@ fieldset {
   gap: 0.45rem;
   align-items: center;
   margin-block: 0.4rem;
+}
+
+.share-list {
+  margin: 0 0 0.6rem 1.6rem;
 }
 
 .btn,

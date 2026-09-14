@@ -117,7 +117,7 @@ export const prayerRequests = sqliteTable("prayer_requests", {
   category: text("category"),
   categoryOther: text("category_other"),
   hopeBy: text("hope_by"),
-  visibility: text("visibility", { enum: ["private", "circle"] }).notNull().default("circle"),
+  visibility: text("visibility", { enum: ["private", "circle", "people"] }).notNull().default("circle"),
   status: text("status", { enum: ["open", "answered"] }).notNull().default("open"),
   answeredAt: integer("answered_at", { mode: "timestamp" }),
   answeredById: text("answered_by_id").references(() => user.id),

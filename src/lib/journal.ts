@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, or } from "drizzle-orm";
+import { and, asc, desc, eq, exists, isNull, or } from "drizzle-orm";
 import { db } from "./db";
 import { digest, id, inviteToken } from "./ids";
 import { sendMail } from "./mail";
@@ -10,6 +10,7 @@ import {
   prayerMarks,
   prayerNotes,
   prayerRequests,
+  requestGrants,
   requestUpdates,
   user,
 } from "./schema";
@@ -142,10 +143,31 @@ export async function redeemInvite(userId: string, raw: string) {
   return { ok: true as const, status: "pending" as const };
 }
 
+function grantedToApprovedMember(userId: string) {
+  return exists(
+    db
+      .select({ id: requestGrants.id })
+      .from(requestGrants)
+      .innerJoin(
+        memberships,
+        and(
+          eq(memberships.userId, requestGrants.userId),
+          eq(memberships.circleId, prayerRequests.circleId),
+          eq(memberships.status, "approved"),
+        ),
+      )
+      .where(and(eq(requestGrants.prayerRequestId, prayerRequests.id), eq(requestGrants.userId, userId))),
+  );
+}
+
 function visibleWhere(userId: string, circleId: string) {
   return and(
     eq(prayerRequests.circleId, circleId),
-    or(eq(prayerRequests.authorId, userId), eq(prayerRequests.visibility, "circle")),
+    or(
+      eq(prayerRequests.authorId, userId),
+      eq(prayerRequests.visibility, "circle"),
+      and(eq(prayerRequests.visibility, "people"), grantedToApprovedMember(userId)),
+    ),
   );
 }
 
@@ -198,6 +220,46 @@ export async function getVisibleRequest(userId: string, circleId: string, reques
   return rows[0] ?? null;
 }
 
+export type RequestVisibility = "private" | "circle" | "people";
+
+async function approvedMemberIds(circleId: string) {
+  const rows = await db
+    .select({ userId: memberships.userId })
+    .from(memberships)
+    .where(and(eq(memberships.circleId, circleId), eq(memberships.status, "approved")));
+  return new Set(rows.map((r) => r.userId));
+}
+
+async function resolveShare(
+  authorId: string,
+  circleId: string,
+  visibility: RequestVisibility,
+  shareWith?: string[],
+) {
+  if (visibility !== "people") return { visibility, grantUserIds: [] as string[] };
+  const allowed = await approvedMemberIds(circleId);
+  // Stryker disable next-line ArrayDeclaration: undefined and [] both filter to no grants.
+  const grantUserIds = [...new Set(shareWith ?? [])].filter((uid) => uid !== authorId && allowed.has(uid));
+  if (grantUserIds.length === 0) return { visibility: "private" as const, grantUserIds: [] };
+  return { visibility: "people" as const, grantUserIds };
+}
+
+async function replaceGrants(requestId: string, grantUserIds: string[]) {
+  await db.delete(requestGrants).where(eq(requestGrants.prayerRequestId, requestId));
+  if (grantUserIds.length === 0) return;
+  await db.insert(requestGrants).values(
+    grantUserIds.map((userId) => ({ id: id(), prayerRequestId: requestId, userId })),
+  );
+}
+
+export async function listRequestGrantUserIds(requestId: string) {
+  const rows = await db
+    .select({ userId: requestGrants.userId })
+    .from(requestGrants)
+    .where(eq(requestGrants.prayerRequestId, requestId));
+  return rows.map((r) => r.userId);
+}
+
 export async function createRequest(
   userId: string,
   circleId: string,
@@ -208,13 +270,15 @@ export async function createRequest(
     category?: string;
     categoryOther?: string;
     hopeBy?: string;
-    visibility: "private" | "circle";
+    visibility: RequestVisibility;
+    shareWith?: string[];
   },
 ) {
   const title = data.title.trim();
   if (!title || title.length > 120) throw new Error("Title is required (max 120).");
   const category = parseCategory(data.category);
   const hopeBy = parseHopeBy(data.hopeBy);
+  const share = await resolveShare(userId, circleId, data.visibility, data.shareWith);
   const row = {
     id: id(),
     circleId,
@@ -225,13 +289,14 @@ export async function createRequest(
     category,
     categoryOther: data.categoryOther?.slice(0, 80) || null,
     hopeBy,
-    visibility: data.visibility,
+    visibility: share.visibility,
     status: "open" as const,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
   await db.insert(prayerRequests).values(row);
-  if (data.visibility === "circle") {
+  await replaceGrants(row.id, share.grantUserIds);
+  if (share.visibility === "circle") {
     await notifyNewRequest(row.id, userId, circleId, title);
   }
   return row;
@@ -245,7 +310,7 @@ export async function updateRequest(
   const existing = await db.select().from(prayerRequests).where(eq(prayerRequests.id, requestId)).limit(1);
   const req = existing[0];
   if (!req || req.authorId !== userId) return null;
-  const wasPrivate = req.visibility === "private";
+  const share = await resolveShare(userId, req.circleId, data.visibility, data.shareWith);
   const category = parseCategory(data.category);
   // whoFor / hopeBy are no longer editable in the UI; only overwrite when callers pass them.
   const whoFor =
@@ -260,11 +325,12 @@ export async function updateRequest(
       category,
       categoryOther: data.categoryOther?.slice(0, 80) || null,
       hopeBy,
-      visibility: data.visibility,
+      visibility: share.visibility,
       updatedAt: new Date(),
     })
     .where(eq(prayerRequests.id, requestId));
-  if (wasPrivate && data.visibility === "circle") {
+  await replaceGrants(requestId, share.grantUserIds);
+  if (req.visibility !== "circle" && share.visibility === "circle") {
     await notifyNewRequest(requestId, userId, req.circleId, data.title);
   }
   return true;
@@ -428,9 +494,11 @@ export async function setMembershipStatus(
   if (action === "approve") {
     await db.update(memberships).set({ status: "approved" }).where(eq(memberships.id, membershipId));
   } else if (action === "decline") {
+    await db.delete(requestGrants).where(eq(requestGrants.userId, m.userId));
     await db.delete(memberships).where(eq(memberships.id, membershipId));
   } else {
     if (m.userId === ownerId) throw new Error("Cannot revoke yourself");
+    await db.delete(requestGrants).where(eq(requestGrants.userId, m.userId));
     await db.update(memberships).set({ status: "revoked" }).where(eq(memberships.id, membershipId));
   }
 }

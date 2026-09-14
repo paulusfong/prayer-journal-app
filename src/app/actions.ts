@@ -204,15 +204,20 @@ export async function submitAppFeedback(formData: FormData) {
   redirect("/feedback?sent=1");
 }
 
+function parseVisibility(raw: string) {
+  if (raw === "private") return "private" as const;
+  if (raw === "people") return "people" as const;
+  return "circle" as const;
+}
+
 function formFrom(formData: FormData) {
   return {
     title: String(formData.get("title") ?? ""),
     body: String(formData.get("body") ?? ""),
     category: String(formData.get("category") ?? "") || undefined,
     categoryOther: String(formData.get("categoryOther") ?? ""),
-    visibility: (String(formData.get("visibility") ?? "circle") === "private" ? "private" : "circle") as
-      | "private"
-      | "circle",
+    visibility: parseVisibility(String(formData.get("visibility") ?? "circle")),
+    shareWith: formData.getAll("shareWith").map(String),
   };
 }
 
