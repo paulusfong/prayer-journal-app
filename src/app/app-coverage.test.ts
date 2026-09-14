@@ -295,6 +295,25 @@ describe("app coverage", async () => {
     const feedback = await import("@/app/feedback/page");
     await renderElement(await feedback.default({ searchParams: Promise.resolve({}) }));
     await renderElement(await feedback.default({ searchParams: Promise.resolve({ sent: "1" }) }));
+    // owner list with rows (covers map branch)
+    const fb = await import("@/lib/feedback");
+    assert.equal(await fb.addAppFeedback(fakeUser.id, "feature", "Ship dark mode"), true);
+    assert.equal(await fb.addAppFeedback(memberId, "comment", "Works on my phone"), true);
+    const withItems = await renderElement(await feedback.default({ searchParams: Promise.resolve({}) }));
+    assert.match(withItems, /Ship dark mode|Works on my phone/);
+    // non-owner: owner inbox section omitted (line 68)
+    const feedbackMember = { ...fakeUser, id: memberId, email: "mem@ex.com", displayName: "Mem" };
+    sessionUser = feedbackMember;
+    await renderElement(await feedback.default({ searchParams: Promise.resolve({}) }));
+    sessionUser = fakeUser;
+
+    const help = await import("@/app/help/page");
+    sessionUser = fakeUser;
+    const helpHtml = await renderElement(await help.default());
+    assert.match(helpHtml, /help|Help|帮助|說明|Ayuda/i);
+    sessionUser = null;
+    await renderElement(await help.default());
+    sessionUser = fakeUser;
 
     const neu = await import("@/app/requests/new/page");
     await renderElement(await neu.default());

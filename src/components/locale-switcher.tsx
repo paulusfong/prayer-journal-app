@@ -4,6 +4,7 @@ import { setLocale } from "@/app/actions";
 import { LOCALES, type Locale } from "@/lib/i18n/locales";
 import { usePathname } from "next/navigation";
 import { useRef } from "react";
+import { localeSelectChangeHandler } from "@/components/submit-locale-form";
 
 type Props = {
   locale: Locale;
@@ -24,7 +25,7 @@ export function LocaleSwitcher({ locale, label, names }: Props) {
           name="locale"
           defaultValue={locale}
           aria-label={label}
-          onChange={() => formRef.current?.requestSubmit()}
+          onChange={localeSelectChangeHandler(formRef)}
         >
           {LOCALES.map((code) => (
             <option key={code} value={code}>
