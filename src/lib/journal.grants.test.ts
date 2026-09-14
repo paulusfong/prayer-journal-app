@@ -85,6 +85,12 @@ describe("named-people request grants", async () => {
   });
 
   it("empty or invalid pick-people collapses to private", async () => {
+    const omitted = await journal.createRequest(ownerId, circleId, {
+      title: "Omitted",
+      visibility: "people",
+    });
+    assert.equal(omitted.visibility, "private");
+
     const empty = await journal.createRequest(ownerId, circleId, {
       title: "Nobody",
       visibility: "people",

@@ -237,8 +237,9 @@ async function resolveShare(
   shareWith?: string[],
 ) {
   if (visibility !== "people") return { visibility, grantUserIds: [] as string[] };
+  if (!shareWith?.length) return { visibility: "private" as const, grantUserIds: [] };
   const allowed = await approvedMemberIds(circleId);
-  const grantUserIds = [...new Set(shareWith ?? [])].filter((uid) => uid !== authorId && allowed.has(uid));
+  const grantUserIds = [...new Set(shareWith)].filter((uid) => uid !== authorId && allowed.has(uid));
   if (grantUserIds.length === 0) return { visibility: "private" as const, grantUserIds: [] };
   return { visibility: "people" as const, grantUserIds };
 }
