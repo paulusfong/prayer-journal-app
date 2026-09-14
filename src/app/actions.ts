@@ -171,19 +171,9 @@ export async function rotateInvite() {
   const { user, membership } = await requireApproved();
   if (membership.role !== "owner") throw new Error("Forbidden");
   const issued = await issueInvite(membership.circleId, user.id);
-  const secure =
-    process.env.NODE_ENV === "production" ||
-    (process.env.BETTER_AUTH_URL ?? "").startsWith("https");
-  // Raw join token is shown once via this short-lived cookie (not stored in DB).
-  // redirect → GET /circle so middleware can clear the cookie after display.
-  (await cookies()).set(INVITE_LINK_ONCE_COOKIE, issued.rawToken, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure,
-    path: "/",
-    maxAge: 60 * 10,
-  });
-  redirect("/circle");
+  // Show raw join token once via query param (cookie flash was cleared before paint).
+  const q = new URLSearchParams({ invite: issued.rawToken });
+  redirect(`/circle?${q.toString()}`);
 }
 
 export async function decideMembership(membershipId: string, action: "approve" | "decline" | "revoke") {
